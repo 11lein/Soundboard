@@ -15,13 +15,51 @@ byte rowPins[ROWS] = {32, 33, 25, 26, 27}; //connect to the row pinouts of the k
 byte colPins[COLS] = {19, 18, 5, 17, 16}; //connect to the column pinouts of the keypad
 
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
-
+bool hold = false;
 
 #define FPSerial Serial1
 
 
 DFRobotDFPlayerMini myDFPlayer;
 void printDetail(uint8_t type, int value);
+
+void playTrack(int track) {
+  Serial.print(F("Track: "));
+  Serial.println(track);
+  myDFPlayer.playMp3Folder(track);
+}
+
+void keypadEvent(KeypadEvent key){
+  int track;
+
+  track = key - 'A' + 1;
+  KeyState state = keypad.getState();
+
+    switch (state){
+      case HOLD:
+        Serial.println("state hold");
+        hold = true;
+        break;
+      case PRESSED:
+        Serial.println("state pressed");
+        // playTrack(track);
+
+        break;
+
+    case RELEASED:
+        Serial.println("state released");
+        if (hold) {
+          track = track + 25;
+        };
+        Serial.println(myDFPlayer.readState());
+        Serial.println(myDFPlayer.readCurrentFileNumber());
+        playTrack(track);
+        hold = false;
+
+        break;
+    }
+}
+
 
 void setup()
 {
@@ -30,6 +68,7 @@ void setup()
 
   Serial.begin(115200);
 
+  keypad.addEventListener(keypadEvent); // Add an event listener for this keypad
   Serial.println();
   Serial.println(F("DFRobot DFPlayer Mini Demo"));
   Serial.println(F("Initializing DFPlayer ... (May take 3~5 seconds)"));
@@ -45,10 +84,6 @@ void setup()
   Serial.println(F("DFPlayer Mini online."));
   
   myDFPlayer.volume(20);  //Set volume value. From 0 to 30
-  //myDFPlayer.play(1);  //Play the first mp3
-  //Serial.println(myDFPlayer.readFileCountsInFolder(1));
-  //Serial.println(myDFPlayer.readFileCountsInFolder(0));
-  //Serial.println(myDFPlayer.readFileCountsInFolder(01));
 
   Serial.println(F("Files on SD " + myDFPlayer.readFileCounts())); //read all file counts in SD card
 
@@ -57,37 +92,58 @@ void setup()
  
 }
 
-  
 void loop(){
   char key = keypad.getKey();
-  int track;
   
-  
-  if (key){
-    Serial.println(key);
-    int track = key - 'A' + 1;
-    //myDFPlayer.playMp3Folder(key);  //Play the first mp3
-    // myDFPlayer.next();
-
-    myDFPlayer.playMp3Folder(track);
-
-    delay(500);
-    //Serial.println(myDFPlayer.readCurrentFileNumber()); //read current play file number
-    //Serial.println(F("readCurrentFileNumber"));
+  if (key) {
+    Serial.println(key - 'A' + 1);
   }
 
-
-  // static unsigned long timer = millis();
-  
-  // if (millis() - timer > 3000) {
-  //   timer = millis();
-  //   myDFPlayer.next();  //Play next mp3 every 3 second.
-  // }
-  
   if (myDFPlayer.available()) {
     printDetail(myDFPlayer.readType(), myDFPlayer.read()); //Print the detail message from DFPlayer to handle different errors and states.
   }
 }
+
+// Taking care of some special events.
+
+
+//   KeyState state = keypad.getState();
+//   int track;
+  
+//   if (key){
+//     Serial.println(key);
+//     track = key - 'A' + 1;
+
+
+//     Serial.print("State: ");
+//     Serial.println(state);
+
+//     if (state == HOLD) {
+//       track = track + 25;
+//     }
+
+//     Serial.print(F("Track: "));
+//     Serial.println(track);
+
+//     myDFPlayer.playMp3Folder(track);
+
+//     delay(500);
+//     //Serial.println(myDFPlayer.readCurrentFileNumber()); //read current play file number
+//     //Serial.println(F("readCurrentFileNumber"));
+//   }
+
+
+//   // static unsigned long timer = millis();
+  
+//   // if (millis() - timer > 3000) {
+//   //   timer = millis();
+//   //   myDFPlayer.next();  //Play next mp3 every 3 second.
+//   // }
+  
+//   if (myDFPlayer.available()) {
+//     printDetail(myDFPlayer.readType(), myDFPlayer.read()); //Print the detail message from DFPlayer to handle different errors and states.
+//   }
+// }
 
 void printDetail(uint8_t type, int value){
   switch (type) {
