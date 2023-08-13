@@ -11,14 +11,17 @@ char keys[ROWS][COLS] = {
     {'P', 'Q', 'R', 'S', 'T'},
     {'U', 'V', 'W', 'X', 'Y'},
 };
-byte rowPins[ROWS] = {19, 18, 5, 17, 16};   // connect to the row pinouts of the keypad
+byte rowPins[ROWS] = {19, 18, 5, 17, 16};  // connect to the row pinouts of the keypad
 byte colPins[COLS] = {32, 33, 25, 26, 27}; // connect to the column pinouts of the keypad
 
 Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 bool hold = false;
 char lastKey;
 
-#define FPSerial Serial1
+#if !defined(UBRR1H)
+#include <SoftwareSerial.h>
+SoftwareSerial mySerial(22, 23); // RX, TX
+#endif
 
 DFPlayerMini_Fast myDFPlayer;
 
@@ -77,7 +80,15 @@ void keypadEvent(KeypadEvent key)
 void setup()
 {
 
-  FPSerial.begin(9600, SERIAL_8N1, /*rx =*/22, /*tx =*/23);
+  // FPSerial.begin(9600, SERIAL_8N1, /*rx =*/22, /*tx =*/23);
+
+#if !defined(UBRR1H)
+  mySerial.begin(9600);
+  myDFPlayer.begin(mySerial, false);
+#else
+  Serial1.begin(9600);
+  myMP3.begin(Serial1, true);
+#endif
 
   Serial.begin(115200);
 
@@ -86,16 +97,16 @@ void setup()
   Serial.println(F("DFRobot DFPlayer Mini Demo"));
   Serial.println(F("Initializing DFPlayer ... (May take 3~5 seconds)"));
 
-  if (!myDFPlayer.begin(FPSerial, /*debug = */ true))
-  { // Use serial to communicate with mp3.
-    Serial.println(F("Unable to begin:"));
-    Serial.println(F("1.Please recheck the connection!"));
-    Serial.println(F("2.Please insert the SD card!"));
-    while (true)
-    {
-      delay(0); // Code to compatible with ESP8266 watch dog.
-    }
-  }
+  // if (!myDFPlayer.begin(FPSerial, /*debug = */ true))
+  // { // Use serial to communicate with mp3.
+  //   Serial.println(F("Unable to begin:"));
+  //   Serial.println(F("1.Please recheck the connection!"));
+  //   Serial.println(F("2.Please insert the SD card!"));
+  //   while (true)
+  //   {
+  //     delay(0); // Code to compatible with ESP8266 watch dog.
+  //   }
+  // }
   Serial.println(F("DFPlayer Mini online."));
 
   myDFPlayer.volume(20); // Set volume value. From 0 to 30
@@ -112,5 +123,4 @@ void loop()
   // if (key) {
   //   Serial.println(key - 'A' + 1);
   // }
-
 }
