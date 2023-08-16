@@ -20,14 +20,16 @@ char lastKey;
 
 #define FPSerial Serial1
 
-DFRobotDFPlayerMini myDFPlayer;
+// DFRobotDFPlayerMini myDFPlayer;
 void printDetail(uint8_t type, int value);
 
 void playTrack(int track)
 {
   Serial.print(F("Track: "));
   Serial.println(track);
-  myDFPlayer.playMp3Folder(track);
+  // myDFPlayer.playMp3Folder(track);
+
+  delay(500);
 }
 
 void keypadEvent(KeypadEvent key)
@@ -53,13 +55,13 @@ void keypadEvent(KeypadEvent key)
     // Serial.println("state released");
     // Serial.print("State: ");
     // Serial.println(myDFPlayer.readState());
-    if (myDFPlayer.readState() == 1 && lastKey == key)
-    { // Busy
-      Serial.println("Busy & Stopping");
-      myDFPlayer.stop();
-    }
-    else
-    {
+    // if (myDFPlayer.readState() == 1 && lastKey == key)
+    // { // Busy
+    //   Serial.println("Busy & Stopping");
+    //   myDFPlayer.stop();
+    // }
+    // else
+    // {
       lastKey = key;
 
       if (hold)
@@ -68,7 +70,7 @@ void keypadEvent(KeypadEvent key)
       };
 
       playTrack(track);
-    }
+    // }
     hold = false;
 
     break;
@@ -78,7 +80,7 @@ void keypadEvent(KeypadEvent key)
 void setup()
 {
 
-  FPSerial.begin(9600, SERIAL_8N1, /*rx =*/22, /*tx =*/23);
+  // FPSerial.begin(9600, SERIAL_8N1, /*rx =*/22, /*tx =*/23);
 
   Serial.begin(115200);
 
@@ -87,21 +89,21 @@ void setup()
   Serial.println(F("DFRobot DFPlayer Mini Demo"));
   Serial.println(F("Initializing DFPlayer ... (May take 3~5 seconds)"));
 
-  if (!myDFPlayer.begin(FPSerial, /*isACK = */ true, /*doReset = */ true))
-  { // Use serial to communicate with mp3.
-    Serial.println(F("Unable to begin:"));
-    Serial.println(F("1.Please recheck the connection!"));
-    Serial.println(F("2.Please insert the SD card!"));
-    while (true)
-    {
-      delay(0); // Code to compatible with ESP8266 watch dog.
-    }
-  }
+  // if (!myDFPlayer.begin(FPSerial, /*isACK = */ true, /*doReset = */ true))
+  // { // Use serial to communicate with mp3.
+  //   Serial.println(F("Unable to begin:"));
+  //   Serial.println(F("1.Please recheck the connection!"));
+  //   Serial.println(F("2.Please insert the SD card!"));
+  //   while (true)
+  //   {
+  //     delay(0); // Code to compatible with ESP8266 watch dog.
+  //   }
+  // }
   Serial.println(F("DFPlayer Mini online."));
 
-  myDFPlayer.volume(20); // Set volume value. From 0 to 30
+  // myDFPlayer.volume(20); // Set volume value. From 0 to 30
 
-  Serial.println(F("Files on SD " + myDFPlayer.readFileCounts())); // read all file counts in SD card
+  // Serial.println(F("Files on SD " + myDFPlayer.readFileCounts())); // read all file counts in SD card
 
   // Serial.println(myDFPlayer.readCurrentFileNumber()); //read current play file number
 }
