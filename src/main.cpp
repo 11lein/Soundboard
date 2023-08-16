@@ -158,11 +158,11 @@ void loop()
 
         ESP.restart();
       }
-      else
+      else if (input.toInt())
       {
         Serial.println("input: " + input);
         int track = input.toInt();
-        if (hold)
+        if (hold == true)
         {
           track = track + 25;
           hold = false;
