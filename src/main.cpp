@@ -2,6 +2,14 @@
 #include <Keypad.h>
 #include "DFRobotDFPlayerMini.h"
 
+#include "BluetoothSerial.h"
+
+#if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
+#error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
+#endif
+
+BluetoothSerial SerialBT;
+
 const byte ROWS = 5; // five rows
 const byte COLS = 5; // five columns
 char keys[ROWS][COLS] = {
@@ -11,7 +19,7 @@ char keys[ROWS][COLS] = {
     {'P', 'Q', 'R', 'S', 'T'},
     {'U', 'V', 'W', 'X', 'Y'},
 };
-byte rowPins[ROWS] = {19, 18, 5, 17, 16};   // connect to the row pinouts of the keypad
+byte rowPins[ROWS] = {19, 18, 5, 17, 16};  // connect to the row pinouts of the keypad
 byte colPins[COLS] = {32, 33, 25, 26, 27}; // connect to the column pinouts of the keypad
 
 Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
@@ -62,14 +70,14 @@ void keypadEvent(KeypadEvent key)
     // }
     // else
     // {
-      lastKey = key;
+    lastKey = key;
 
-      if (hold)
-      {
-        track = track + 25;
-      };
+    if (hold)
+    {
+      track = track + 25;
+    };
 
-      playTrack(track);
+    playTrack(track);
     // }
     hold = false;
 
@@ -88,6 +96,9 @@ void setup()
   Serial.println();
   Serial.println(F("DFRobot DFPlayer Mini Demo"));
   Serial.println(F("Initializing DFPlayer ... (May take 3~5 seconds)"));
+
+  SerialBT.begin("NB11"); // Bluetooth device name
+  Serial.println("The device started, now you can pair it with bluetooth!");
 
   // if (!myDFPlayer.begin(FPSerial, /*isACK = */ true, /*doReset = */ true))
   // { // Use serial to communicate with mp3.
@@ -111,6 +122,58 @@ void setup()
 void loop()
 {
   char key = keypad.getKey();
+
+  if (SerialBT.available())
+  {
+    String input = SerialBT.readStringUntil('\n');
+
+    if (input)
+    {
+
+      if (input == "hold")
+      {
+        hold = true;
+      }
+      else if (input == "stop")
+      {
+        Serial.println("input: " + input);
+
+        // myDFPlayer.stop();
+      }
+      else if (input == "+")
+      {
+        Serial.println("input: " + input);
+
+        // myDFPlayer.volumeUp();
+      }
+      else if (input == "-")
+      {
+        Serial.println("input: " + input);
+
+        // myDFPlayer.volumeDown();
+      }
+      else if (input == "reset")
+      {
+        Serial.println("input: " + input);
+
+        ESP.restart();
+      }
+      else
+      {
+        Serial.println("input: " + input);
+        int track = input.toInt();
+        if (hold)
+        {
+          track = track + 25;
+          hold = false;
+        }
+        Serial.println("Playing track: " + String(track));
+        playTrack(track);
+      }
+    }
+  }
+
+  delay(20);
 
   // if (key) {
   //   Serial.println(key - 'A' + 1);
