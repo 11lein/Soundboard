@@ -4,6 +4,13 @@
 
 #include "BluetoothSerial.h"
 
+<<<<<<< HEAD
+=======
+#if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
+#error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
+#endif
+
+>>>>>>> 3e3a4b2 (bt initual)
 BluetoothSerial SerialBT;
 
 const byte ROWS = 5; // five rows
@@ -72,14 +79,14 @@ void keypadEvent(KeypadEvent key)
     // }
     // else
     // {
-      lastKey = key;
+    lastKey = key;
 
-      if (hold)
-      {
-        track = track + 25;
-      };
+    if (hold)
+    {
+      track = track + 25;
+    };
 
-      playTrack(track);
+    playTrack(track);
     // }
     hold = false;
 
@@ -106,6 +113,9 @@ void setup()
   Serial.println(F("DFRobot DFPlayer Mini Demo"));
   Serial.println(F("Initializing DFPlayer ... (May take 3~5 seconds)"));
 
+  SerialBT.begin("NB11"); // Bluetooth device name
+  Serial.println("The device started, now you can pair it with bluetooth!");
+
   // if (!myDFPlayer.begin(FPSerial, /*isACK = */ true, /*doReset = */ true))
   // { // Use serial to communicate with mp3.
   //   Serial.println(F("Unable to begin:"));
@@ -131,6 +141,7 @@ void loop()
 
   if (SerialBT.available())
   {
+<<<<<<< HEAD
     int input = SerialBT.readStringUntil('\n').toInt();
 
     Serial.print("input: ");
@@ -161,12 +172,45 @@ void loop()
       else if (input == 95)
       {
         SerialBT.println("reset");
+=======
+    String input = SerialBT.readStringUntil('\n');
+
+    if (input)
+    {
+
+      if (input == "hold")
+      {
+        hold = true;
+      }
+      else if (input == "stop")
+      {
+        Serial.println("input: " + input);
+
+        // myDFPlayer.stop();
+      }
+      else if (input == "+")
+      {
+        Serial.println("input: " + input);
+
+        // myDFPlayer.volumeUp();
+      }
+      else if (input == "-")
+      {
+        Serial.println("input: " + input);
+
+        // myDFPlayer.volumeDown();
+      }
+      else if (input == "reset")
+      {
+        Serial.println("input: " + input);
+>>>>>>> 3e3a4b2 (bt initual)
 
         ESP.restart();
       }
       else
       {
         Serial.println("input: " + input);
+<<<<<<< HEAD
         Serial.println("secondSound: " + String(secondSound));
         int track = input;
         if (secondSound == true)
@@ -176,6 +220,15 @@ void loop()
         }
         Serial.println("Playing track: " + String(track));
         SerialBT.println("Playing track: " + String(track));
+=======
+        int track = input.toInt();
+        if (hold)
+        {
+          track = track + 25;
+          hold = false;
+        }
+        Serial.println("Playing track: " + String(track));
+>>>>>>> 3e3a4b2 (bt initual)
         playTrack(track);
       }
     }
@@ -183,4 +236,10 @@ void loop()
 
   delay(20);
 
+<<<<<<< HEAD
+=======
+  // if (key) {
+  //   Serial.println(key - 'A' + 1);
+  // }
+>>>>>>> 3e3a4b2 (bt initual)
 }
