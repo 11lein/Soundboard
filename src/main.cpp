@@ -24,14 +24,16 @@ SoftwareSerial mySerial;
 // (22, 23); // RX, TX
 #endif
 
-// #define FPSerial Serial1
-DFPlayerMini_Fast myDFPlayer;
+// DFRobotDFPlayerMini myDFPlayer;
+void printDetail(uint8_t type, int value);
 
 void playTrack(int track)
 {
   Serial.print(F("Track: "));
   Serial.println(track);
-  myDFPlayer.playFromMP3Folder(track);
+  // myDFPlayer.playMp3Folder(track);
+
+  delay(500);
 }
 
 void keypadEvent(KeypadEvent key)
@@ -57,13 +59,13 @@ void keypadEvent(KeypadEvent key)
     // Serial.println("state released");
     // Serial.print("State: ");
     // Serial.println(myDFPlayer.readState());
-    if (myDFPlayer.isPlaying() && lastKey == key)
-    { // Busy
-      Serial.println("Busy & Stopping");
-      myDFPlayer.stop();
-    }
-    else
-    {
+    // if (myDFPlayer.readState() == 1 && lastKey == key)
+    // { // Busy
+    //   Serial.println("Busy & Stopping");
+    //   myDFPlayer.stop();
+    // }
+    // else
+    // {
       lastKey = key;
 
       if (hold)
@@ -72,7 +74,7 @@ void keypadEvent(KeypadEvent key)
       };
 
       playTrack(track);
-    }
+    // }
     hold = false;
 
     break;
@@ -82,16 +84,7 @@ void keypadEvent(KeypadEvent key)
 void setup()
 {
 
-  // Serial1.begin(9600, SERIAL_8N1, /*rx =*/22, /*tx =*/23);
-
-#if !defined(UBRR1H)
-  mySerial.begin(9600, SWSERIAL_8N1, /*rx =*/22, /*tx =*/23);
-  // mySerial.begin(9600);
-  myDFPlayer.begin(mySerial, true);
-#else
-  // Serial1.begin(9600);
-  myDFPlayer.begin(Serial1, true);
-#endif
+  // FPSerial.begin(9600, SERIAL_8N1, /*rx =*/22, /*tx =*/23);
 
   Serial.begin(115200);
 
@@ -100,7 +93,7 @@ void setup()
   Serial.println(F("DFRobot DFPlayer Mini Demo"));
   Serial.println(F("Initializing DFPlayer ... (May take 3~5 seconds)"));
 
-  // if (!myDFPlayer.begin(FPSerial, /*debug = */ true))
+  // if (!myDFPlayer.begin(FPSerial, /*isACK = */ true, /*doReset = */ true))
   // { // Use serial to communicate with mp3.
   //   Serial.println(F("Unable to begin:"));
   //   Serial.println(F("1.Please recheck the connection!"));
@@ -112,9 +105,9 @@ void setup()
   // }
   Serial.println(F("DFPlayer Mini online."));
 
-  myDFPlayer.volume(20); // Set volume value. From 0 to 30
+  // myDFPlayer.volume(20); // Set volume value. From 0 to 30
 
-  Serial.println(F("Files on SD " + myDFPlayer.numSdTracks())); // read all file counts in SD card
+  // Serial.println(F("Files on SD " + myDFPlayer.readFileCounts())); // read all file counts in SD card
 
   // Serial.println(myDFPlayer.readCurrentFileNumber()); //read current play file number
 }
