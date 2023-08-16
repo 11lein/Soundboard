@@ -207,7 +207,7 @@ void loop()
 
         ESP.restart();
       }
-      else
+      else if (input.toInt())
       {
         Serial.println("input: " + input);
 <<<<<<< HEAD
@@ -222,7 +222,7 @@ void loop()
         SerialBT.println("Playing track: " + String(track));
 =======
         int track = input.toInt();
-        if (hold)
+        if (hold == true)
         {
           track = track + 25;
           hold = false;
