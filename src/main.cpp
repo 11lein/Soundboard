@@ -20,6 +20,10 @@ Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 bool hold = false;
 char lastKey;
 
+#if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
+#error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
+#endif
+
 #if !defined(UBRR1H)
 #include <SoftwareSerial.h>
 SoftwareSerial mySerial;
@@ -69,6 +73,7 @@ void keypadEvent(KeypadEvent key)
     else
     {
       lastKey = key;
+    }
 
     if (hold)
     {
@@ -85,9 +90,13 @@ void keypadEvent(KeypadEvent key)
 
 void setup()
 {
-
-  FPSerial.begin(9600, SERIAL_8N1, /*rx =*/22, /*tx =*/23);
-
+#if !defined(UBRR1H)
+  mySerial.begin(9600);
+  myDFPlayer.begin(mySerial, true);
+#else
+  Serial1.begin(9600);
+  myMP3.begin(Serial1, true);
+#endif
   Serial.begin(115200);
 
   keypad.addEventListener(keypadEvent); // Add an event listener for this keypad
@@ -95,16 +104,16 @@ void setup()
   Serial.println(F("DFRobot DFPlayer Mini Demo"));
   Serial.println(F("Initializing DFPlayer ... (May take 3~5 seconds)"));
 
-  if (!myDFPlayer.begin(FPSerial, /*isACK = */ true, /*doReset = */ true))
-  { // Use serial to communicate with mp3.
-    Serial.println(F("Unable to begin:"));
-    Serial.println(F("1.Please recheck the connection!"));
-    Serial.println(F("2.Please insert the SD card!"));
-    while (true)
-    {
-      delay(0); // Code to compatible with ESP8266 watch dog.
-    }
-  }
+  // if (!myDFPlayer.begin(FPSerial, /*isACK = */ true, /*doReset = */ true))
+  // { // Use serial to communicate with mp3.
+  //   Serial.println(F("Unable to begin:"));
+  //   Serial.println(F("1.Please recheck the connection!"));
+  //   Serial.println(F("2.Please insert the SD card!"));
+  //   while (true)
+  //   {
+  //     delay(0); // Code to compatible with ESP8266 watch dog.
+  //   }
+  // }
   Serial.println(F("DFPlayer Mini online."));
 
   // myDFPlayer.volume(20); // Set volume value. From 0 to 30
