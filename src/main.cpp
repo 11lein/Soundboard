@@ -20,9 +20,11 @@ char lastKey;
 
 #if !defined(UBRR1H)
 #include <SoftwareSerial.h>
-SoftwareSerial mySerial(22, 23); // RX, TX
+SoftwareSerial mySerial;
+// (22, 23); // RX, TX
 #endif
 
+// #define FPSerial Serial1
 DFPlayerMini_Fast myDFPlayer;
 
 void playTrack(int track)
@@ -80,14 +82,15 @@ void keypadEvent(KeypadEvent key)
 void setup()
 {
 
-  // FPSerial.begin(9600, SERIAL_8N1, /*rx =*/22, /*tx =*/23);
+  // Serial1.begin(9600, SERIAL_8N1, /*rx =*/22, /*tx =*/23);
 
 #if !defined(UBRR1H)
-  mySerial.begin(9600);
-  myDFPlayer.begin(mySerial, false);
+  mySerial.begin(9600, SWSERIAL_8N1, /*rx =*/22, /*tx =*/23);
+  // mySerial.begin(9600);
+  myDFPlayer.begin(mySerial, true);
 #else
-  Serial1.begin(9600);
-  myMP3.begin(Serial1, true);
+  // Serial1.begin(9600);
+  myDFPlayer.begin(Serial1, true);
 #endif
 
   Serial.begin(115200);
