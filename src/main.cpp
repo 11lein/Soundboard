@@ -4,13 +4,10 @@
 
 #include "BluetoothSerial.h"
 
-<<<<<<< HEAD
-=======
 #if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
 #error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
 #endif
 
->>>>>>> 3e3a4b2 (bt initual)
 BluetoothSerial SerialBT;
 
 const byte ROWS = 5; // five rows
@@ -29,6 +26,10 @@ Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 bool hold = false;
 bool secondSound = false;
 char lastKey;
+
+#if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
+#error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
+#endif
 
 #if !defined(UBRR1H)
 #include <SoftwareSerial.h>
@@ -72,14 +73,15 @@ void keypadEvent(KeypadEvent key)
     // Serial.println("state released");
     // Serial.print("State: ");
     // Serial.println(myDFPlayer.readState());
-    // if (myDFPlayer.readState() == 1 && lastKey == key)
-    // { // Busy
-    //   Serial.println("Busy & Stopping");
-    //   myDFPlayer.stop();
-    // }
-    // else
-    // {
-    lastKey = key;
+    if (myDFPlayer.isPlaying() && lastKey == key)
+    { // Busy
+      Serial.println("Busy & Stopping");
+      myDFPlayer.stop();
+    }
+    else
+    {
+      lastKey = key;
+    }
 
     if (hold)
     {
@@ -96,11 +98,21 @@ void keypadEvent(KeypadEvent key)
 
 void setup()
 {
+<<<<<<< HEAD
 // #if !defined(UBRR1H)
   mySerial.begin(9600);
 
   // FPSerial.begin(9600, SERIAL_8N1, /*rx =*/22, /*tx =*/23);
 
+=======
+#if !defined(UBRR1H)
+  mySerial.begin(9600);
+  myDFPlayer.begin(mySerial, true);
+#else
+  Serial1.begin(9600);
+  myMP3.begin(Serial1, true);
+#endif
+>>>>>>> 4eba813 (Merge branch 'dfplayer-fast')
   Serial.begin(115200);
   myDFPlayer.begin(mySerial);
 
@@ -112,9 +124,6 @@ void setup()
   Serial.println();
   Serial.println(F("DFRobot DFPlayer Mini Demo"));
   Serial.println(F("Initializing DFPlayer ... (May take 3~5 seconds)"));
-
-  SerialBT.begin("NB11"); // Bluetooth device name
-  Serial.println("The device started, now you can pair it with bluetooth!");
 
   // if (!myDFPlayer.begin(FPSerial, /*isACK = */ true, /*doReset = */ true))
   // { // Use serial to communicate with mp3.
