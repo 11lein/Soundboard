@@ -4,6 +4,8 @@
 
 #include "BluetoothSerial.h"
 
+BluetoothSerial SerialBT;
+
 const byte ROWS = 5; // five rows
 const byte COLS = 5; // five columns
 char keys[ROWS][COLS] = {
