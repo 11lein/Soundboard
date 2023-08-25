@@ -20,19 +20,14 @@ byte colPins[COLS] = {32, 33, 25, 26, 27}; // connect to the column pinouts of t
 
 Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 bool hold = false;
+bool secondSound = false;
 char lastKey;
-
-#if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
-#error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
-#endif
 
 #if !defined(UBRR1H)
 #include <SoftwareSerial.h>
-SoftwareSerial mySerial;
-// (22, 23); // RX, TX
+SoftwareSerial mySerial(22, 23); // RX, TX
 #endif
 
-// #define FPSerial Serial1
 DFPlayerMini_Fast myDFPlayer;
 
 void printDetail(uint8_t type, int value);
@@ -92,14 +87,19 @@ void keypadEvent(KeypadEvent key)
 
 void setup()
 {
-#if !defined(UBRR1H)
+// #if !defined(UBRR1H)
   mySerial.begin(9600);
-  myDFPlayer.begin(mySerial, true);
-#else
-  Serial1.begin(9600);
-  myMP3.begin(Serial1, true);
-#endif
+
+// #else
+//   Serial1.begin(9600);
+//   myMP3.begin(Serial1, true);
+// #endif
   Serial.begin(115200);
+  myDFPlayer.begin(mySerial);
+
+  if(!SerialBT.begin("NB11")){
+    Serial.println("An error occurred initializing Bluetooth");
+  }
 
   keypad.addEventListener(keypadEvent); // Add an event listener for this keypad
   Serial.println();
@@ -118,7 +118,7 @@ void setup()
   // }
   Serial.println(F("DFPlayer Mini online."));
 
-  // myDFPlayer.volume(20); // Set volume value. From 0 to 30
+  myDFPlayer.volume(20); // Set volume value. From 0 to 30
 
   // Serial.println(F("Files on SD " + myDFPlayer.readFileCounts())); // read all file counts in SD card
 
@@ -131,49 +131,51 @@ void loop()
 
   if (SerialBT.available())
   {
-    String input = SerialBT.readStringUntil('\n');
+    int input = SerialBT.readStringUntil('\n').toInt();
 
-    if (input)
+    Serial.print("input: ");
+    Serial.println(input);
+
+    if (input > 0)
     {
-
-      if (input == "hold")
+      if (input == 99)
       {
-        hold = true;
+        SerialBT.println("set 2nd");
+        secondSound = true;
       }
-      else if (input == "stop")
+      else if (input == 98)
       {
-        Serial.println("input: " + input);
-
-        // myDFPlayer.stop();
+        myDFPlayer.stop();
+        SerialBT.println("Stopped");
       }
-      else if (input == "+")
+      else if (input == 97)
       {
-        Serial.println("input: " + input);
-
-        // myDFPlayer.volumeUp();
+        myDFPlayer.volume(20);
+        SerialBT.println("Volume 20");
       }
-      else if (input == "-")
+      else if (input == 96)
       {
-        Serial.println("input: " + input);
-
-        // myDFPlayer.volumeDown();
+        myDFPlayer.volume(10);
+        SerialBT.println("Volume 10");
       }
-      else if (input == "reset")
+      else if (input == 95)
       {
-        Serial.println("input: " + input);
+        SerialBT.println("reset");
 
         ESP.restart();
       }
-      else if (input.toInt())
+      else
       {
         Serial.println("input: " + input);
-        int track = input.toInt();
-        if (hold == true)
+        Serial.println("secondSound: " + String(secondSound));
+        int track = input;
+        if (secondSound == true)
         {
           track = track + 25;
-          hold = false;
+          secondSound = false;
         }
         Serial.println("Playing track: " + String(track));
+        SerialBT.println("Playing track: " + String(track));
         playTrack(track);
       }
     }
@@ -181,7 +183,4 @@ void loop()
 
   delay(20);
 
-  // if (key) {
-  //   Serial.println(key - 'A' + 1);
-  // }
 }
