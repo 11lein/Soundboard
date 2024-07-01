@@ -97,7 +97,7 @@ void setup()
   Serial.begin(115200);
   myDFPlayer.begin(mySerial);
 
-  if(!SerialBT.begin("NB11")){
+  if(!SerialBT.begin("das_11lein")){
     Serial.println("An error occurred initializing Bluetooth");
   }
 
@@ -118,7 +118,7 @@ void setup()
   // }
   Serial.println(F("DFPlayer Mini online."));
 
-  myDFPlayer.volume(20); // Set volume value. From 0 to 30
+  myDFPlayer.volume(30); // Set volume value. From 0 to 30
 
   // Serial.println(F("Files on SD " + myDFPlayer.readFileCounts())); // read all file counts in SD card
 
