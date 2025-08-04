@@ -36,12 +36,12 @@ Deshalb: ein eigenständiges Soundboard mit 25 Tasten, SD-Karte und Sofortreakti
 
 ## ⚙️ Features
 
-- 🎵 **25 Tasten** in 5×5 Matrix für direkte Soundauswahl  
+- 🎵 **25 Tasten** in 5×5 Matrix für direkte Soundauswahl
 - 🔁 **Zweifachbelegung:** Shift-Modus (Taster gedrückt halten oder Bluetooth-Befehl → Track +25)
 - 💾 **DFPlayer Mini** spielt MP3s direkt von SD-Karte
 - 📡 **Bluetooth**-Steuerung per Smartphone-App oder Terminal
 - 🧠 **ESP32** mit frei programmierbarer Logik
-- 🧰 [**3D-gedrucktes Gehäuse**](https://cad.onshape.com/documents/51f835b686c64aa4e062ca5b/w/735ce97b22fc647d3e8dc544/e/93c6d67ebc2946beec692255?renderMode=0&uiState=6890fba874e54c0f2372ca89) 
+- 🧰 [**3D-gedrucktes Gehäuse**](https://cad.onshape.com/documents/51f835b686c64aa4e062ca5b/w/735ce97b22fc647d3e8dc544/e/93c6d67ebc2946beec692255?renderMode=0&uiState=6890fba874e54c0f2372ca89)
 
 ---
 
@@ -67,7 +67,9 @@ Erstellt in [Wokwi](https://wokwi.com) (Virtueller Schaltplan: `wokwi_project.js
 | C4           | D26       |
 | C5           | D27       |
 
-### 🎧 DFPlayer Mini Anschluss
+### 🎧 DFPlayer Mini Anschluss 
+Für die korrekte Verkabelung siehe
+[DFPlayer Mini Dokumentation](https://www.elektronik-kompendium.de/sites/praxis/bauteil_dfplayer-mini.htm)
 
 | DFPlayer Pin | ESP32 Pin |
 |--------------|-----------|
@@ -75,11 +77,15 @@ Erstellt in [Wokwi](https://wokwi.com) (Virtueller Schaltplan: `wokwi_project.js
 | RX           | GPIO23    |
 | VCC          | 5V        |
 | GND          | GND       |
+|----| **Endstufe**|
+| SPK1     | Left Audio  |
+| GND      | GND Audio   |
+| SPK2     | Right Audio |
+
 
 💾 SD-Karte:  
-MP3-Dateien im Format `0001.mp3` bis `0050.mp3` im Hauptverzeichnis.
+MP3-Dateien im Format `0001.mp3` bis `0050.mp3` im MP3 Verzeichnis.
 
-📡 Bluetooth-Name: **das_11lein**
 
 ---
 
