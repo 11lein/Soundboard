@@ -4,6 +4,8 @@
 
 #include "BluetoothSerial.h"
 
+BluetoothSerial SerialBT;
+
 const byte ROWS = 5; // five rows
 const byte COLS = 5; // five columns
 char keys[ROWS][COLS] = {
@@ -19,17 +21,14 @@ byte colPins[COLS] = {32, 33, 25, 26, 27}; // connect to the column pinouts of t
 Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 bool hold = false;
 bool secondSound = false;
-bool secondSound = false;
 char lastKey;
 
 #if !defined(UBRR1H)
 #include <SoftwareSerial.h>
 SoftwareSerial mySerial(22, 23); // RX, TX
-SoftwareSerial mySerial(22, 23); // RX, TX
 #endif
 
-// DFRobotDFPlayerMini myDFPlayer;
-void printDetail(uint8_t type, int value);
+DFPlayerMini_Fast myDFPlayer;
 
 void printDetail(uint8_t type, int value);
 
@@ -37,9 +36,7 @@ void playTrack(int track)
 {
   Serial.print(F("Track: "));
   Serial.println(track);
-  // myDFPlayer.playMp3Folder(track);
-
-  delay(500);
+  myDFPlayer.playFromMP3Folder(track);
 }
 
 void keypadEvent(KeypadEvent key)
