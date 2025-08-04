@@ -1,0 +1,787 @@
+{
+    "version": 1,
+    "author": "11lein",
+    "editor": "wokwi",
+    "parts": [
+        {
+            "type": "wokwi-esp32-devkit-v1",
+            "id": "esp",
+            "top": -321.7,
+            "left": 148.6,
+            "attrs": {}
+        },
+        {
+            "type": "wokwi-microsd-card",
+            "id": "sd1",
+            "top": -460.57,
+            "left": 86.47,
+            "attrs": {}
+        },
+        {
+            "type": "wokwi-pushbutton",
+            "id": "btn-A",
+            "top": 291.5,
+            "left": 7.1,
+            "rotate": 90,
+            "attrs": {
+                "label": "A"
+            }
+        },
+        {
+            "type": "wokwi-pushbutton",
+            "id": "btn-B",
+            "top": 291.5,
+            "left": 93.5,
+            "rotate": 90,
+            "attrs": {
+                "label": "B"
+            }
+        },
+        {
+            "type": "wokwi-pushbutton",
+            "id": "btn-C",
+            "top": 291.5,
+            "left": 189.5,
+            "rotate": 90,
+            "attrs": {
+                "label": "C"
+            }
+        },
+        {
+            "type": "wokwi-pushbutton",
+            "id": "btn-D",
+            "top": 291.5,
+            "left": 285.5,
+            "rotate": 90,
+            "attrs": {
+                "label": "D"
+            }
+        },
+        {
+            "type": "wokwi-pushbutton",
+            "id": "btn-E",
+            "top": 291.5,
+            "left": 381.5,
+            "rotate": 90,
+            "attrs": {
+                "label": "E"
+            }
+        },
+        {
+            "type": "wokwi-pushbutton",
+            "id": "btn-F",
+            "top": 205.1,
+            "left": 7.1,
+            "rotate": 90,
+            "attrs": {
+                "label": "F"
+            }
+        },
+        {
+            "type": "wokwi-pushbutton",
+            "id": "btn-G",
+            "top": 205.1,
+            "left": 93.5,
+            "rotate": 90,
+            "attrs": {
+                "label": "G"
+            }
+        },
+        {
+            "type": "wokwi-pushbutton",
+            "id": "btn-H",
+            "top": 205.1,
+            "left": 189.5,
+            "rotate": 90,
+            "attrs": {
+                "label": "H"
+            }
+        },
+        {
+            "type": "wokwi-pushbutton",
+            "id": "btn-I",
+            "top": 205.1,
+            "left": 285.5,
+            "rotate": 90,
+            "attrs": {
+                "label": "I"
+            }
+        },
+        {
+            "type": "wokwi-pushbutton",
+            "id": "btn-J",
+            "top": 205.1,
+            "left": 381.5,
+            "rotate": 90,
+            "attrs": {
+                "label": "J"
+            }
+        },
+        {
+            "type": "wokwi-pushbutton",
+            "id": "btn-K",
+            "top": 118.7,
+            "left": 7.1,
+            "rotate": 90,
+            "attrs": {
+                "label": "K"
+            }
+        },
+        {
+            "type": "wokwi-pushbutton",
+            "id": "btn-L",
+            "top": 118.7,
+            "left": 93.5,
+            "rotate": 90,
+            "attrs": {
+                "label": "L"
+            }
+        },
+        {
+            "type": "wokwi-pushbutton",
+            "id": "btn-M",
+            "top": 118.7,
+            "left": 189.5,
+            "rotate": 90,
+            "attrs": {
+                "label": "M"
+            }
+        },
+        {
+            "type": "wokwi-pushbutton",
+            "id": "btn-N",
+            "top": 118.7,
+            "left": 285.5,
+            "rotate": 90,
+            "attrs": {
+                "label": "N"
+            }
+        },
+        {
+            "type": "wokwi-pushbutton",
+            "id": "btn-O",
+            "top": 118.7,
+            "left": 381.5,
+            "rotate": 90,
+            "attrs": {
+                "label": "O"
+            }
+        },
+        {
+            "type": "wokwi-pushbutton",
+            "id": "btn-P",
+            "top": 32.3,
+            "left": 7.1,
+            "rotate": 90,
+            "attrs": {
+                "label": "P"
+            }
+        },
+        {
+            "type": "wokwi-pushbutton",
+            "id": "btn-Q",
+            "top": 32.3,
+            "left": 93.5,
+            "rotate": 90,
+            "attrs": {
+                "label": "Q"
+            }
+        },
+        {
+            "type": "wokwi-pushbutton",
+            "id": "btn-R",
+            "top": 32.3,
+            "left": 189.5,
+            "rotate": 90,
+            "attrs": {
+                "label": "R"
+            }
+        },
+        {
+            "type": "wokwi-pushbutton",
+            "id": "btn-S",
+            "top": 32.3,
+            "left": 285.5,
+            "rotate": 90,
+            "attrs": {
+                "label": "S"
+            }
+        },
+        {
+            "type": "wokwi-pushbutton",
+            "id": "btn-T",
+            "top": 32.3,
+            "left": 381.5,
+            "rotate": 90,
+            "attrs": {
+                "label": "T"
+            }
+        },
+        {
+            "type": "wokwi-pushbutton",
+            "id": "btn-U",
+            "top": -54.1,
+            "left": 7.1,
+            "rotate": 90,
+            "attrs": {
+                "label": "U"
+            }
+        },
+        {
+            "type": "wokwi-pushbutton",
+            "id": "btn-V",
+            "top": -54.1,
+            "left": 93.5,
+            "rotate": 90,
+            "attrs": {
+                "label": "V"
+            }
+        },
+        {
+            "type": "wokwi-pushbutton",
+            "id": "btn-W",
+            "top": -54.1,
+            "left": 189.5,
+            "rotate": 90,
+            "attrs": {
+                "label": "W"
+            }
+        },
+        {
+            "type": "wokwi-pushbutton",
+            "id": "btn-X",
+            "top": -54.1,
+            "left": 285.5,
+            "rotate": 90,
+            "attrs": {
+                "label": "X"
+            }
+        },
+        {
+            "type": "wokwi-pushbutton",
+            "id": "btn-Y",
+            "top": -54.1,
+            "left": 381.5,
+            "rotate": 90,
+            "attrs": {
+                "label": "Y"
+            }
+        },
+        {
+            "type": "wokwi-buzzer",
+            "id": "bz1",
+            "top": -583.2,
+            "left": 165,
+            "attrs": {
+                "volume": "0.1"
+            }
+        }
+    ],
+    "connections": [
+        [
+            "esp:3V3",
+            "sd1:VCC",
+            "red",
+            [
+                "h105.3",
+                "v-259.34"
+            ]
+        ],
+        [
+            "esp:GND.2",
+            "sd1:GND",
+            "black",
+            [
+                "h-28.8",
+                "v-172.9",
+                "h249.6",
+                "v-96.11"
+            ]
+        ],
+        [
+            "esp:D23",
+            "sd1:MOSI",
+            "green",
+            []
+        ],
+        [
+            "esp:D19",
+            "sd1:MISO",
+            "blue",
+            []
+        ],
+        [
+            "sd1:SCK",
+            "esp:D23",
+            "green",
+            [
+                "h153.6",
+                "v124.69"
+            ]
+        ],
+        [
+            "esp:D22",
+            "sd1:CS",
+            "gold",
+            [
+                "h86.1",
+                "v-115.56"
+            ]
+        ],
+        [
+            "esp:D19",
+            "btn-E:1.r",
+            "green",
+            [
+                "h297.3",
+                "v614.3",
+                "h-48"
+            ]
+        ],
+        [
+            "btn-E:1.r",
+            "btn-D:1.r",
+            "green",
+            [
+                "v19.4",
+                "h-96"
+            ]
+        ],
+        [
+            "btn-D:1.r",
+            "btn-C:1.r",
+            "green",
+            [
+                "v19.4",
+                "h-96"
+            ]
+        ],
+        [
+            "btn-C:1.r",
+            "btn-B:1.r",
+            "green",
+            [
+                "v19.4",
+                "h-96"
+            ]
+        ],
+        [
+            "btn-B:1.r",
+            "btn-A:1.r",
+            "green",
+            [
+                "v19.4",
+                "h-86.4"
+            ]
+        ],
+        [
+            "esp:D18",
+            "btn-J:1.r",
+            "orange",
+            [
+                "h316.5",
+                "v508.8",
+                "h-67.2"
+            ]
+        ],
+        [
+            "btn-J:1.r",
+            "btn-I:1.r",
+            "orange",
+            [
+                "v9.8",
+                "h-96"
+            ]
+        ],
+        [
+            "btn-I:1.r",
+            "btn-H:1.r",
+            "orange",
+            [
+                "v9.8",
+                "h-96"
+            ]
+        ],
+        [
+            "btn-H:1.r",
+            "btn-G:1.r",
+            "orange",
+            [
+                "v9.8",
+                "h-96"
+            ]
+        ],
+        [
+            "btn-G:1.r",
+            "btn-F:1.r",
+            "orange",
+            [
+                "v9.8",
+                "h-96"
+            ]
+        ],
+        [
+            "esp:D5",
+            "btn-O:1.r",
+            "#8f4814",
+            [
+                "h335.7",
+                "v412.8",
+                "h-86.4"
+            ]
+        ],
+        [
+            "btn-O:1.r",
+            "btn-N:1.r",
+            "#8f4814",
+            [
+                "v9.8",
+                "h-96"
+            ]
+        ],
+        [
+            "btn-N:1.r",
+            "btn-M:1.r",
+            "#8f4814",
+            [
+                "v9.8",
+                "h-96"
+            ]
+        ],
+        [
+            "btn-M:1.r",
+            "btn-L:1.r",
+            "#8f4814",
+            [
+                "v9.8",
+                "h-96"
+            ]
+        ],
+        [
+            "btn-L:1.r",
+            "btn-K:1.r",
+            "#8f4814",
+            [
+                "v9.8",
+                "h-86.4"
+            ]
+        ],
+        [
+            "esp:TX2",
+            "btn-T:1.r",
+            "blue",
+            [
+                "h354.9",
+                "v316.7",
+                "h-105.6"
+            ]
+        ],
+        [
+            "btn-T:1.r",
+            "btn-S:1.r",
+            "blue",
+            [
+                "v9.8",
+                "h-96"
+            ]
+        ],
+        [
+            "btn-S:1.r",
+            "btn-R:1.r",
+            "blue",
+            [
+                "v9.8",
+                "h-96"
+            ]
+        ],
+        [
+            "btn-R:1.r",
+            "btn-Q:1.r",
+            "blue",
+            [
+                "v9.8",
+                "h-96"
+            ]
+        ],
+        [
+            "btn-Q:1.r",
+            "btn-P:1.r",
+            "blue",
+            [
+                "v9.8",
+                "h-86.4"
+            ]
+        ],
+        [
+            "esp:RX2",
+            "btn-Y:1.r",
+            "violet",
+            [
+                "h374.1",
+                "v220.5",
+                "h-124.8"
+            ]
+        ],
+        [
+            "btn-Y:1.r",
+            "btn-X:1.r",
+            "violet",
+            [
+                "v9.8",
+                "h-96"
+            ]
+        ],
+        [
+            "btn-X:1.r",
+            "btn-W:1.r",
+            "violet",
+            [
+                "v9.8",
+                "h-96"
+            ]
+        ],
+        [
+            "btn-W:1.r",
+            "btn-V:1.r",
+            "violet",
+            [
+                "v9.8",
+                "h-96"
+            ]
+        ],
+        [
+            "btn-V:1.r",
+            "btn-U:1.r",
+            "violet",
+            [
+                "v9.8",
+                "h-86.4"
+            ]
+        ],
+        [
+            "esp:D32",
+            "btn-U:2.l",
+            "gray",
+            [
+                "h0"
+            ]
+        ],
+        [
+            "btn-U:2.r",
+            "btn-P:2.l",
+            "gray",
+            [
+                "v0"
+            ]
+        ],
+        [
+            "btn-P:2.r",
+            "btn-K:2.l",
+            "gray",
+            [
+                "v0"
+            ]
+        ],
+        [
+            "btn-K:2.r",
+            "btn-F:2.l",
+            "gray",
+            [
+                "v0"
+            ]
+        ],
+        [
+            "btn-F:2.r",
+            "btn-A:2.l",
+            "gray",
+            [
+                "v0"
+            ]
+        ],
+        [
+            "esp:D33",
+            "btn-V:2.l",
+            "white",
+            [
+                "h-105.6",
+                "v172.8",
+                "h77"
+            ]
+        ],
+        [
+            "btn-V:2.r",
+            "btn-Q:2.l",
+            "white",
+            [
+                "v0"
+            ]
+        ],
+        [
+            "btn-Q:2.r",
+            "btn-L:2.l",
+            "white",
+            [
+                "v0"
+            ]
+        ],
+        [
+            "btn-L:2.r",
+            "btn-G:2.l",
+            "white",
+            [
+                "v0"
+            ]
+        ],
+        [
+            "btn-G:2.r",
+            "btn-B:2.l",
+            "white",
+            [
+                "v0"
+            ]
+        ],
+        [
+            "esp:D25",
+            "btn-W:2.l",
+            "purple",
+            [
+                "h-96",
+                "v153.6",
+                "h163.4"
+            ]
+        ],
+        [
+            "btn-W:2.r",
+            "btn-R:2.l",
+            "purple",
+            [
+                "v0"
+            ]
+        ],
+        [
+            "btn-R:2.r",
+            "btn-M:2.l",
+            "purple",
+            [
+                "v0"
+            ]
+        ],
+        [
+            "btn-M:2.r",
+            "btn-H:2.l",
+            "purple",
+            [
+                "v0"
+            ]
+        ],
+        [
+            "btn-H:2.r",
+            "btn-C:2.l",
+            "purple",
+            [
+                "v0"
+            ]
+        ],
+        [
+            "esp:D26",
+            "btn-X:2.l",
+            "limegreen",
+            [
+                "h-86.4",
+                "v134.3",
+                "h249.8"
+            ]
+        ],
+        [
+            "btn-X:2.r",
+            "btn-S:2.l",
+            "limegreen",
+            [
+                "v0"
+            ]
+        ],
+        [
+            "btn-S:2.r",
+            "btn-N:2.l",
+            "limegreen",
+            [
+                "v0"
+            ]
+        ],
+        [
+            "btn-N:2.r",
+            "btn-I:2.l",
+            "limegreen",
+            [
+                "v0"
+            ]
+        ],
+        [
+            "btn-I:2.r",
+            "btn-D:2.l",
+            "limegreen",
+            [
+                "v0"
+            ]
+        ],
+        [
+            "esp:D27",
+            "btn-Y:2.l",
+            "cyan",
+            [
+                "h-76.8",
+                "v114.9",
+                "h336.2"
+            ]
+        ],
+        [
+            "btn-Y:2.r",
+            "btn-T:2.l",
+            "cyan",
+            [
+                "v0"
+            ]
+        ],
+        [
+            "btn-T:2.r",
+            "btn-O:2.l",
+            "cyan",
+            [
+                "v0"
+            ]
+        ],
+        [
+            "btn-O:2.r",
+            "btn-J:2.l",
+            "cyan",
+            [
+                "v0"
+            ]
+        ],
+        [
+            "btn-J:2.r",
+            "btn-E:2.l",
+            "cyan",
+            [
+                "v0"
+            ]
+        ],
+        [
+            "bz1:1",
+            "sd1:CD",
+            "black",
+            [
+                "v0"
+            ]
+        ],
+        [
+            "bz1:2",
+            "sd1:DO",
+            "red",
+            [
+                "v0"
+            ]
+        ]
+    ],
+    "dependencies": {}
+}
