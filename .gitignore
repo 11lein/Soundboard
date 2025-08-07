@@ -4,3 +4,4 @@
 .vscode/launch.json
 .vscode/ipch
 src/MP3_24
+.DS_Store
