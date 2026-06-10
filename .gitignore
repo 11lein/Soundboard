@@ -3,4 +3,6 @@
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/ipch
-src/MP3_org
+src/MP3_24
+src/MP3*
+.DS_Store

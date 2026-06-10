@@ -87,17 +87,18 @@ void keypadEvent(KeypadEvent key)
 
 void setup()
 {
-// #if !defined(UBRR1H)
+  // #if !defined(UBRR1H)
   mySerial.begin(9600);
 
-// #else
-//   Serial1.begin(9600);
-//   myMP3.begin(Serial1, true);
-// #endif
+  // #else
+  //   Serial1.begin(9600);
+  //   myMP3.begin(Serial1, true);
+  // #endif
   Serial.begin(115200);
   myDFPlayer.begin(mySerial);
 
-  if(!SerialBT.begin("das_11lein")){
+  if (!SerialBT.begin("das_11lein"))
+  {
     Serial.println("An error occurred initializing Bluetooth");
   }
 
@@ -182,5 +183,4 @@ void loop()
   }
 
   delay(20);
-
 }
