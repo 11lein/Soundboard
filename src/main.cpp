@@ -1,7 +1,6 @@
 #include "Arduino.h"
 #include <Keypad.h>
 #include <DFPlayerMini_Fast.h>
-
 #include "BluetoothSerial.h"
 
 BluetoothSerial SerialBT;
@@ -21,16 +20,11 @@ byte colPins[COLS] = {32, 33, 25, 26, 27}; // connect to the column pinouts of t
 Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 bool hold = false;
 bool secondSound = false;
-char lastKey;
+char lastKey = 0;
 
-#if !defined(UBRR1H)
-#include <SoftwareSerial.h>
-SoftwareSerial mySerial(22, 23); // RX, TX
-#endif
+HardwareSerial mySerial(2); // UART2, RX=22 TX=23
 
 DFPlayerMini_Fast myDFPlayer;
-
-void printDetail(uint8_t type, int value);
 
 void playTrack(int track)
 {
@@ -41,146 +35,120 @@ void playTrack(int track)
 
 void keypadEvent(KeypadEvent key)
 {
-  int track;
-
-  track = key - 'A' + 1;
+  int track = key - 'A' + 1;
   KeyState state = keypad.getState();
 
   switch (state)
   {
   case HOLD:
-    // Serial.println("state hold");
     hold = true;
-    break;
-  case PRESSED:
-    // Serial.println("state pressed");
-    // playTrack(track);
-
     break;
 
   case RELEASED:
-    // Serial.println("state released");
-    // Serial.print("State: ");
-    // Serial.println(myDFPlayer.readState());
+    if (hold) track += 25;
+    hold = false;
+
     if (myDFPlayer.isPlaying() && lastKey == key)
-    { // Busy
-      Serial.println("Busy & Stopping");
+    { // same key pressed again → stop (toggle)
       myDFPlayer.stop();
+      lastKey = 0;
     }
     else
     {
       lastKey = key;
+      playTrack(track);
     }
+    break;
 
-    if (hold)
-    {
-      track = track + 25;
-    };
-
-    playTrack(track);
-    // }
-    hold = false;
-
+  default:
     break;
   }
 }
 
 void setup()
 {
-  // #if !defined(UBRR1H)
-  mySerial.begin(9600);
-
-  // #else
-  //   Serial1.begin(9600);
-  //   myMP3.begin(Serial1, true);
-  // #endif
   Serial.begin(115200);
-  myDFPlayer.begin(mySerial);
+  mySerial.begin(9600, SERIAL_8N1, 22, 23);
+
+  if (!myDFPlayer.begin(mySerial))
+  {
+    Serial.println(F("DFPlayer not found - check connection and SD card"));
+    while (true) delay(1);
+  }
 
   if (!SerialBT.begin("das_11lein"))
   {
-    Serial.println("An error occurred initializing Bluetooth");
+    Serial.println(F("Bluetooth init failed"));
   }
 
   keypad.addEventListener(keypadEvent); // Add an event listener for this keypad
-  Serial.println();
-  Serial.println(F("DFRobot DFPlayer Mini Demo"));
-  Serial.println(F("Initializing DFPlayer ... (May take 3~5 seconds)"));
+  keypad.setHoldTime(500);
 
-  // if (!myDFPlayer.begin(FPSerial, /*isACK = */ true, /*doReset = */ true))
-  // { // Use serial to communicate with mp3.
-  //   Serial.println(F("Unable to begin:"));
-  //   Serial.println(F("1.Please recheck the connection!"));
-  //   Serial.println(F("2.Please insert the SD card!"));
-  //   while (true)
-  //   {
-  //     delay(0); // Code to compatible with ESP8266 watch dog.
-  //   }
-  // }
   Serial.println(F("DFPlayer Mini online."));
-
   myDFPlayer.volume(30); // Set volume value. From 0 to 30
-
-  // Serial.println(F("Files on SD " + myDFPlayer.readFileCounts())); // read all file counts in SD card
-
-  // Serial.println(myDFPlayer.readCurrentFileNumber()); //read current play file number
 }
 
 void loop()
 {
-  char key = keypad.getKey();
+  keypad.getKey();
 
-  if (SerialBT.available())
+  // Non-blocking BT line reader
+  static String btBuffer = "";
+  while (SerialBT.available())
   {
-    int input = SerialBT.readStringUntil('\n').toInt();
-
-    Serial.print("input: ");
-    Serial.println(input);
-
-    if (input > 0)
+    char c = SerialBT.read();
+    if (c == '\n')
     {
-      if (input == 99)
-      {
-        SerialBT.println("set 2nd");
-        secondSound = true;
-      }
-      else if (input == 98)
-      {
-        myDFPlayer.stop();
-        SerialBT.println("Stopped");
-      }
-      else if (input == 97)
-      {
-        myDFPlayer.volume(20);
-        SerialBT.println("Volume 20");
-      }
-      else if (input == 96)
-      {
-        myDFPlayer.volume(10);
-        SerialBT.println("Volume 10");
-      }
-      else if (input == 95)
-      {
-        SerialBT.println("reset");
+      int input = btBuffer.toInt();
+      btBuffer = "";
 
-        ESP.restart();
-      }
-      else
+      Serial.print(F("BT input: "));
+      Serial.println(input);
+
+      if (input > 0)
       {
-        Serial.println("input: " + input);
-        Serial.println("secondSound: " + String(secondSound));
-        int track = input;
-        if (secondSound == true)
+        if (input == 99)
         {
-          track = track + 25;
-          secondSound = false;
+          secondSound = true;
+          SerialBT.println("set 2nd");
         }
-        Serial.println("Playing track: " + String(track));
-        SerialBT.println("Playing track: " + String(track));
-        playTrack(track);
+        else if (input == 98)
+        {
+          myDFPlayer.stop();
+          SerialBT.println("Stopped");
+        }
+        else if (input == 97)
+        {
+          myDFPlayer.volume(20);
+          SerialBT.println("Volume 20");
+        }
+        else if (input == 96)
+        {
+          myDFPlayer.volume(10);
+          SerialBT.println("Volume 10");
+        }
+        else if (input == 95)
+        {
+          SerialBT.println("reset");
+          ESP.restart();
+        }
+        else
+        {
+          int track = input;
+          if (secondSound)
+          {
+            track += 25;
+            secondSound = false;
+          }
+          Serial.println("Playing track: " + String(track));
+          SerialBT.println("Playing track: " + String(track));
+          playTrack(track);
+        }
       }
     }
+    else if (c != '\r')
+    {
+      btBuffer += c;
+    }
   }
-
-  delay(20);
 }
