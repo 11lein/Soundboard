@@ -33,7 +33,7 @@ An ESP32-based hardware soundboard built for a "Carbage Run" (Schrottauto-Rallye
 
 ### Sound Bank
 
-144 MP3 files on the DFPlayer's SD card in a `MP3/` folder, numbered `0001`–`0144`, organised as **6 banks of 24** tracks. Reference copies live in `src/MP3_org1/`.
+144 MP3 files on the DFPlayer's SD card in a `MP3/` folder. Track numbering encodes the bank: `bank*100 + position`, so bank 1 = `0101`–`0124`, bank 2 = `0201`–`0224`, … bank 6 = `0601`–`0624` (**6 banks of 24**). Reference copies live in `src/MP3_org1/`.
 
 ### Keypad Logic
 
@@ -41,28 +41,27 @@ An ESP32-based hardware soundboard built for a "Carbage Run" (Schrottauto-Rallye
 
 | `Y` status | sound key tap | sound key hold |
 |---|---|---|
-| – (default) | Bank 1 (`0001`–`0024`) | Bank 2 (`0025`–`0048`) |
-| `Y` tapped  | Bank 3 (`0049`–`0072`) | Bank 4 (`0073`–`0096`) |
-| `Y` held    | Bank 5 (`0097`–`0120`) | Bank 6 (`0121`–`0144`) |
+| – (default) | Bank 1 (`0101`–`0124`) | Bank 2 (`0201`–`0224`) |
+| `Y` tapped  | Bank 3 (`0301`–`0324`) | Bank 4 (`0401`–`0424`) |
+| `Y` held    | Bank 5 (`0501`–`0524`) | Bank 6 (`0601`–`0624`) |
 
-Track = `(key − 'A' + 1) + bankIndex * 24`, where `bankIndex = modeLevel*2 + hold` (0..5).
+Track = `(bankIndex + 1) * 100 + (key − 'A' + 1)`, where `bankIndex = modeLevel*2 + hold` (0..5).
 Pressing the same key again while it is playing stops playback (BUSY-pin toggle).
 
 ### Bluetooth Commands
 
-Send a number string (terminated with `\n`). The protocol mirrors the keypad: pick a bank, then a key.
+Send a number string (terminated with `\n`). The track number encodes the bank, so it is sent directly.
 
 | Value | Action |
 |---|---|
-| 101–106 | Select bank 1–6 for the next sound |
-| 1–24 | Play that key in the active bank, then reset to bank 1 |
-| 200 | Stop playback |
-| 201 | Volume 10 |
-| 202 | Volume 20 |
-| 203 | Volume 30 (max) |
-| 209 | `ESP.restart()` |
+| 101–624 | Play that track directly (e.g. 305 = bank 3, key E) |
+| 9999 | Stop playback |
+| 9998 | Volume 10 |
+| 9997 | Volume 20 |
+| 9996 | Volume 30 (max) |
+| 9995 | `ESP.restart()` |
 
-Default volume on boot: **30** (maximum). Command codes sit above the track range so they never collide with a key number.
+Default volume on boot: **30** (maximum). Command codes sit at 9999 and descend — far above any track number, so they never collide.
 
 ---
 
@@ -77,7 +76,7 @@ The two CSV files (`list_5x5_1.csv`, `list_5x5_2.csv`) describe an older 5×5 / 
 - **No BT authentication** — any device can connect to `das_11lein` and trigger or stop sounds.
 - **No mode feedback** — there is no LED; the current bank group is only visible on the serial monitor (`Mode: n`). Deliberately omitted (see history) to avoid extra wiring.
 - **CSV files are stale** — `list_5x5_1.csv` / `list_5x5_2.csv` reflect the old 25-key layout, not the current 144-track banks.
-- **SD card must match the bank layout** — 24 tracks per bank, `0001`–`0144`, or keys play the wrong sound.
+- **SD card must match the bank layout** — 24 tracks per bank, named `bank*100+pos` (`0101`–`0624`), or keys play the wrong sound.
 
 ---
 

@@ -21,16 +21,18 @@ const unsigned long MODE_TIMEOUT_MS = 10000; // auto-reset to mode 0 after 10 s
 
 const int NUM_BANKS = 6; // 6 banks of 24 keys = 144 tracks
 
-// Bluetooth protocol (mirrors the keypad's bank logic):
-//   1..24    -> play that key in the currently selected bank, then reset to 1
-//   101..106 -> select bank 1..6 for the next sound
-//   200..209 -> commands below
-const int CMD_BANK_BASE = 100;   // 101..106 select bank 1..6
-const int CMD_STOP = 200;        // stop playback
-const int CMD_VOLUME_LOW = 201;  // set volume to 10
-const int CMD_VOLUME_MID = 202;  // set volume to 20
-const int CMD_VOLUME_HIGH = 203; // set volume to 30 (max)
-const int CMD_RESET = 209;       // restart the ESP32
+// Track numbering encodes bank + position: track = bank*100 + key (1..24).
+//   bank 1: 101..124   bank 2: 201..224   ...   bank 6: 601..624
+// Files on the SD card are named accordingly (0101_*.mp3 ... 0624_*.mp3).
+
+// Bluetooth protocol:
+//   101..624 -> play that track directly (bank is encoded in the number)
+//   9995..9999 -> commands below (above any track number, descending)
+const int CMD_STOP = 9999;       // stop playback
+const int CMD_VOLUME_LOW = 9998; // set volume to 10
+const int CMD_VOLUME_MID = 9997; // set volume to 20
+const int CMD_VOLUME_HIGH = 9996; // set volume to 30 (max)
+const int CMD_RESET = 9995;      // restart the ESP32
 
 BluetoothSerial SerialBT;
 
@@ -53,7 +55,6 @@ char lastKey = 0;
 byte modeLevel = 0;             // 0,1,2 -> bank pairs (1&2, 3&4, 5&6)
 bool yHold = false;            // true while the Y press is a long hold
 unsigned long modeSetTime = 0; // millis() when the mode was last changed
-byte btBank = 0;               // bank (0..5) selected via BT, resets after play
 
 HardwareSerial mySerial(2); // UART2, RX=22 TX=23
 
@@ -116,9 +117,9 @@ void keypadEvent(KeypadEvent key)
 
   case RELEASED:
   {
-    byte bankIndex = modeLevel * 2 + (hold ? 1 : 0);          // 0..5
+    byte bankIndex = modeLevel * 2 + (hold ? 1 : 0);    // 0..5
     hold = false;
-    int track = (key - 'A' + 1) + bankIndex * KEYS_PER_BANK;  // 1..144
+    int track = (bankIndex + 1) * 100 + (key - 'A' + 1); // 101..624
 
     if (isPlaying() && lastKey == key)
     { // same key pressed again → stop (toggle)
@@ -222,18 +223,12 @@ void loop()
           SerialBT.println("reset");
           ESP.restart();
         }
-        else if (input > CMD_BANK_BASE && input <= CMD_BANK_BASE + NUM_BANKS)
-        {
-          btBank = input - CMD_BANK_BASE - 1; // 0..5
-          SerialBT.println("Bank " + String(btBank + 1));
-        }
-        else if (input <= KEYS_PER_BANK) // 1..24 -> key in the selected bank
-        {
-          int track = input + btBank * KEYS_PER_BANK; // 1..144
-          Serial.println("Playing track: " + String(track));
-          SerialBT.println("Playing track: " + String(track));
-          playTrack(track);
-          btBank = 0; // back to bank 1 after playback
+        else if (input / 100 >= 1 && input / 100 <= NUM_BANKS &&
+                 input % 100 >= 1 && input % 100 <= KEYS_PER_BANK)
+        { // valid track: bank*100 + key, e.g. 101..124, 201..224, ... 601..624
+          Serial.println("Playing track: " + String(input));
+          SerialBT.println("Playing track: " + String(input));
+          playTrack(input);
         }
         else
         {

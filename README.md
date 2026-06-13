@@ -85,7 +85,8 @@ Für die korrekte Verkabelung siehe
 
 
 💾 SD-Karte:  
-MP3-Dateien im Format `0001.mp3` bis `0144.mp3` im MP3 Verzeichnis (24 pro Bank).
+MP3-Dateien im MP3-Verzeichnis, benannt nach `Bank*100 + Position`:
+Bank 1 = `0101`–`0124`, Bank 2 = `0201`–`0224`, … Bank 6 = `0601`–`0624` (24 pro Bank).
 
 ---
 
@@ -97,29 +98,28 @@ MP3-Dateien im Format `0001.mp3` bis `0144.mp3` im MP3 Verzeichnis (24 pro Bank)
 
 | `Y`-Status | Soundtaste kurz | Soundtaste halten |
 |------------|-----------------|-------------------|
-| – (Standard)   | Bank 1 (`0001`–`0024`) | Bank 2 (`0025`–`0048`) |
-| `Y` kurz tippen | Bank 3 (`0049`–`0072`) | Bank 4 (`0073`–`0096`) |
-| `Y` halten      | Bank 5 (`0097`–`0120`) | Bank 6 (`0121`–`0144`) |
+| – (Standard)   | Bank 1 (`0101`–`0124`) | Bank 2 (`0201`–`0224`) |
+| `Y` kurz tippen | Bank 3 (`0301`–`0324`) | Bank 4 (`0401`–`0424`) |
+| `Y` halten      | Bank 5 (`0501`–`0524`) | Bank 6 (`0601`–`0624`) |
 
-- Pro Bank gilt: Taste **A** = erster Track, … **X** = 24. Track der Bank.
+- Tracknummer = **Bank × 100 + Position**. Taste **A** = Position 1, … **X** = Position 24.
 - Der gewählte Mode gilt **für den nächsten Sound** und springt danach sofort auf Standard (Bank 1 & 2) zurück. Ohne Tastendruck resettet er automatisch **nach 10 s**; erneutes `Y` schaltet ebenfalls zurück.
 - Dieselbe Taste während der Wiedergabe erneut drücken = **Stop**.
 
 ### 📡 Bluetooth-Befehle
 
-Zahl (mit `\n`) an das Gerät `das_11lein` senden. Die Bedienung spiegelt die Tastatur: erst die Bank wählen, dann die Taste.
+Zahl (mit `\n`) an das Gerät `das_11lein` senden. Die Tracknummer enthält die Bank direkt – einfach die Nummer senden.
 
 | Eingabe | Aktion |
 |---------|--------|
-| `101`–`106` | Bank 1–6 für den nächsten Sound vorwählen |
-| `1`–`24` | Taste in der aktiven Bank abspielen (danach zurück auf Bank 1) |
-| `200` | Stop |
-| `201` | Lautstärke 10 |
-| `202` | Lautstärke 20 |
-| `203` | Lautstärke 30 (max) |
-| `209` | Neustart |
+| `101`–`624` | Track direkt abspielen (z. B. `305` = Bank 3, Taste E) |
+| `9999` | Stop |
+| `9998` | Lautstärke 10 |
+| `9997` | Lautstärke 20 |
+| `9996` | Lautstärke 30 (max) |
+| `9995` | Neustart |
 
-> Beispiel: `103` ⏎ dann `5` ⏎ spielt Track `0053` (Bank 3, Taste E). Ohne Bank-Vorwahl spielt `1`–`24` direkt aus Bank 1.
+> Die Befehlscodes liegen bei `9999` absteigend – weit über jeder Tracknummer, daher keine Kollision.
 
 
 ---
