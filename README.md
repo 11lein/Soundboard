@@ -36,10 +36,10 @@ Deshalb: ein eigenständiges Soundboard mit 25 Tasten, SD-Karte und Sofortreakti
 
 ## ⚙️ Features
 
-- 🎵 **25 Tasten** in 5×5 Matrix für direkte Soundauswahl
-- 🔁 **Zweifachbelegung:** Shift-Modus (Taster gedrückt halten oder Bluetooth-Befehl → Track +25)
+- 🎵 **24 Soundtasten** (A–X) in 5×5 Matrix für direkte Soundauswahl
+- 🔁 **Sechsfachbelegung:** `Y` = Mode-Taste + Halten → **144 Sounds** (6 Bänke)
 - 💾 **DFPlayer Mini** spielt MP3s direkt von SD-Karte
-- 📡 **Bluetooth**-Steuerung per Smartphone-App oder Terminal
+- 📡 **Bluetooth**-Steuerung per Smartphone-App oder Terminal (alle 144 Tracks)
 - 🧠 **ESP32** mit frei programmierbarer Logik
 - 🧰 [**3D-gedrucktes Gehäuse**](https://cad.onshape.com/documents/51f835b686c64aa4e062ca5b/w/735ce97b22fc647d3e8dc544/e/93c6d67ebc2946beec692255?renderMode=0&uiState=6890fba874e54c0f2372ca89)
 
@@ -75,6 +75,7 @@ Für die korrekte Verkabelung siehe
 |--------------|-----------|
 | TX           | GPIO22    |
 | RX           | GPIO23    |
+| BUSY         | GPIO4     |
 | VCC          | 5V        |
 | GND          | GND       |
 |----| **Endstufe**|
@@ -84,7 +85,41 @@ Für die korrekte Verkabelung siehe
 
 
 💾 SD-Karte:  
-MP3-Dateien im Format `0001.mp3` bis `0050.mp3` im MP3 Verzeichnis.
+MP3-Dateien im Format `0001.mp3` bis `0144.mp3` im MP3 Verzeichnis (24 pro Bank).
+
+---
+
+## 🎮 Bedienung
+
+### Tasten (A–X) + Mode-Taste `Y`
+
+`Y` spielt keinen Sound, sondern wählt die Bank-Gruppe. Eine Soundtaste **kurz** drücken oder **halten** wählt innerhalb der Gruppe die Bank:
+
+| `Y`-Status | Soundtaste kurz | Soundtaste halten |
+|------------|-----------------|-------------------|
+| – (Standard)   | Bank 1 (`0001`–`0024`) | Bank 2 (`0025`–`0048`) |
+| `Y` kurz tippen | Bank 3 (`0049`–`0072`) | Bank 4 (`0073`–`0096`) |
+| `Y` halten      | Bank 5 (`0097`–`0120`) | Bank 6 (`0121`–`0144`) |
+
+- Pro Bank gilt: Taste **A** = erster Track, … **X** = 24. Track der Bank.
+- Der gewählte Mode gilt **für den nächsten Sound** und springt danach sofort auf Standard (Bank 1 & 2) zurück. Ohne Tastendruck resettet er automatisch **nach 10 s**; erneutes `Y` schaltet ebenfalls zurück.
+- Dieselbe Taste während der Wiedergabe erneut drücken = **Stop**.
+
+### 📡 Bluetooth-Befehle
+
+Zahl (mit `\n`) an das Gerät `das_11lein` senden. Die Bedienung spiegelt die Tastatur: erst die Bank wählen, dann die Taste.
+
+| Eingabe | Aktion |
+|---------|--------|
+| `101`–`106` | Bank 1–6 für den nächsten Sound vorwählen |
+| `1`–`24` | Taste in der aktiven Bank abspielen (danach zurück auf Bank 1) |
+| `200` | Stop |
+| `201` | Lautstärke 10 |
+| `202` | Lautstärke 20 |
+| `203` | Lautstärke 30 (max) |
+| `209` | Neustart |
+
+> Beispiel: `103` ⏎ dann `5` ⏎ spielt Track `0053` (Bank 3, Taste E). Ohne Bank-Vorwahl spielt `1`–`24` direkt aus Bank 1.
 
 
 ---
