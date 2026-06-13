@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline'; media-src 'self' file:;"
+    />
+    <title>MP3 Sorter</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <div class="toolbar">
+        <button id="open-btn">📂 Ordner öffnen</button>
+        <span id="folder-path" class="muted">Kein Ordner geladen</span>
+      </div>
+      <div class="toolbar">
+        <span id="status" class="muted"></span>
+        <button id="preview-btn" disabled>👁️ Vorschau</button>
+        <button id="pdf-btn" disabled>🖨️ PDF (A4)</button>
+        <button id="save-draft-btn" disabled>💾 Zwischenspeichern</button>
+        <button id="commit-btn" class="primary" disabled>
+          ✅ Final speichern (umbenennen)
+        </button>
+      </div>
+    </header>
+
+    <main id="drop-zone">
+      <div id="empty-hint" class="empty-hint">
+        <p>📂 Ordner öffnen oder MP3-Dateien hierher ziehen</p>
+        <p class="muted">
+          6 Bänke × 24 = 144 Slots. Prefix <code>0001_</code> bestimmt die
+          Position, Dateien ohne Prefix landen alphabetisch dahinter.
+        </p>
+      </div>
+      <div id="list"></div>
+    </main>
+
+    <!-- Move dialog: swap vs shift -->
+    <div id="move-dialog" class="overlay hidden">
+      <div class="dialog">
+        <p id="move-text"></p>
+        <div class="dialog-buttons">
+          <button id="move-swap">🔁 Tauschen</button>
+          <button id="move-shift" class="primary">⬇️ Folgende verschieben</button>
+        </div>
+        <label class="remember">
+          <input type="checkbox" id="move-remember" /> Für diese Sitzung merken
+        </label>
+        <button id="move-cancel" class="link">Abbrechen</button>
+      </div>
+    </div>
+
+    <script src="../lib/naming.js"></script>
+    <script src="renderer.js"></script>
+  </body>
+</html>

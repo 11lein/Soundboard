@@ -1,0 +1,26 @@
+{
+  "name": "mp3-sorter",
+  "version": "1.0.0",
+  "description": "Drag-and-drop sorter for Soundboard MP3 files (6 banks x 24, 0001_ prefix)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test \"test/**/*.test.js\"",
+    "test:smoke": "electron test/smoke.js",
+    "dist": "electron-builder"
+  },
+  "author": "Ronny Elflein",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "de.11lein.mp3sorter",
+    "productName": "MP3 Sorter",
+    "files": ["main.js", "preload.js", "renderer/**"],
+    "mac": { "target": "dmg" },
+    "win": { "target": "nsis" },
+    "linux": { "target": "AppImage" }
+  }
+}
