@@ -12,20 +12,26 @@ Soundboard-MP3s per **Drag & Drop**. Die Dateien werden für das DFPlayer-Schema
 - 🔢 **Prefix-Sortierung:** Dateien mit gültigem `Bank*100+Pos`-Prefix (z. B.
   `0101_`, `0305_`) landen auf ihrem Slot; Dateien ohne (oder mit altem) Prefix
   werden alphabetisch dahinter einsortiert.
-- 🏦 **Bänke als 5×5-Raster:** Jede der 6 Bänke wird dem physischen Kasten
-  nachempfunden dargestellt – Start **unten links**, hochzählend, **oben rechts**
-  die Mode-Taste (nicht belegbar). Identifikation rein über die Position, **keine
-  Buchstaben**. Überlauf über Bank 6 wird rot markiert.
+- 🏦 **Ansicht wie das PDF:** **ein** 5×5-Raster (dem Kasten nachempfunden, unten
+  links beginnend, oben rechts die nicht belegbare Mode-Taste). Jede Taste zeigt
+  **6 Zeilen** – eine je Bank – mit Dateiname (ohne Prefix/Endung) und
+  **Play-Knopf** statt Nummer. Zellen sind nach der physischen Tastenfarbe
+  eingefärbt.
+- 🅿️ **Parkplätze:** Dateien **ohne** gültigen Prefix landen unten in Parkplätzen
+  (Reihen aus 5 Boxen × 6 Zeilen, alphabetisch, mit Play). Zieht man eine Datei
+  aus dem Raster hierher, wird ihr **Prefix entfernt** (sie wird wieder unsortiert).
 - 🎨 **Farb-Kodierung:** Die physische Tastenfarbe (oben Grün, dann Gelb, Weiß,
   Blau, unten Schwarz – 2. von links Rot) liegt als
-  [`lib/key-colors.json`](lib/key-colors.json) im Projekt und färbt die Zellen in
-  App **und** PDF als helle Hintergründe ein.
-- ↔️ **Beim Verschieben** wird gefragt: **Tauschen** (Positionen wechseln) oder
-  **Folgende verschieben** (einfügen, alle nachfolgenden rücken nach hinten).
-  Die Wahl lässt sich für die Sitzung merken.
-- ▶️ **Vorhören:** Jede belegte Zelle hat einen Play-Knopf, der während der
-  Wiedergabe zum Pause-Knopf wird. Ein anderer Sound stoppt alle übrigen und
-  setzt ihre Position auf 0 s – nur der aktuelle Titel merkt sich seine Pause.
+  [`lib/key-colors.json`](lib/key-colors.json) im Projekt und färbt Raster und PDF.
+- ✏️ **Umbenennen (Suchen & Ersetzen):** Button öffnet einen Dialog mit
+  Suchen/Ersetzen, **Regex**- und **Groß/Klein**-Checkbox (Default: ignoriert).
+  Eine **2-Spalten-Vorschau** zeigt nur die betroffenen Dateien zum Bestätigen.
+- 💳 **Auf SD-Karte schieben:** Wechseldatenträger auswählen, optional **vorher
+  formatieren** (mit Nachfrage; sofern das OS es unterstützt), dann die geprefixten
+  Dateien in den `MP3/`-Ordner der Karte kopieren.
+- ▶️ **Vorhören:** Play-Knopf pro Zeile, der während der Wiedergabe zur Pause
+  wird. Ein anderer Sound stoppt alle übrigen und setzt sie auf 0 s zurück – nur
+  der aktuelle Titel merkt sich seine Pause.
 - 🖨️ **PDF-Export & Vorschau (A4 quer):** Erzeugt eine Belegungs-Übersicht als
   5×5-Raster (mit den Tastenfarben als Hintergrund), wobei **jede Tastenzelle
   alle 6 Bänke** untereinander zeigt (Bank-Nummer + Dateiname **ohne**

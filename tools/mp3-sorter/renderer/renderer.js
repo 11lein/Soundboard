@@ -1,34 +1,73 @@
 /* global naming, api */
-const { BANK_SIZE, NUM_BANKS, TOTAL_SLOTS, finalName, bankOfSlot } = naming;
+const { BANK_SIZE, NUM_BANKS, TOTAL_SLOTS, prefixForSlot, pad4 } = naming;
 
+// Model: 144 slots (gaps allowed) + a parked list of unprefixed files.
+// entry = { orig: on-disk filename, base: descriptive name (no slot prefix, .mp3 kept) }
 const state = {
   folder: null,
-  order: [], // filenames in slot order (index 0 = slot 1)
+  slots: new Array(TOTAL_SLOTS).fill(null),
+  parked: [],
   dirty: false,
 };
 
-// Session-remembered move choice: null | "swap" | "shift"
-let rememberedMove = null;
+const el = {
+  gridWrap: document.getElementById("grid-wrap"),
+  parkingWrap: document.getElementById("parking-wrap"),
+  emptyHint: document.getElementById("empty-hint"),
+  folderPath: document.getElementById("folder-path"),
+  status: document.getElementById("status"),
+  openBtn: document.getElementById("open-btn"),
+  renameBtn: document.getElementById("rename-btn"),
+  sdBtn: document.getElementById("sd-btn"),
+  previewBtn: document.getElementById("preview-btn"),
+  pdfBtn: document.getElementById("pdf-btn"),
+  saveDraftBtn: document.getElementById("save-draft-btn"),
+  commitBtn: document.getElementById("commit-btn"),
+  dropZone: document.getElementById("drop-zone"),
+  // renamer
+  rnDialog: document.getElementById("rename-dialog"),
+  rnSearch: document.getElementById("rn-search"),
+  rnReplace: document.getElementById("rn-replace"),
+  rnRegex: document.getElementById("rn-regex"),
+  rnCase: document.getElementById("rn-case"),
+  rnError: document.getElementById("rn-error"),
+  rnCount: document.getElementById("rn-count"),
+  rnPreview: document.getElementById("rn-preview"),
+  rnApply: document.getElementById("rn-apply"),
+  rnCancel: document.getElementById("rn-cancel"),
+};
 
-// Single audio player. Only the current track keeps its position; switching to
-// another track stops the old one and resets it to 0s.
-const player = { audio: new Audio(), index: null, playing: false };
+function displayName(base) {
+  return base.replace(/\.mp3$/i, "");
+}
+function countFiles() {
+  return state.slots.filter(Boolean).length + state.parked.length;
+}
+function escapeHtml(s) {
+  return s.replace(/[&<>"]/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])
+  );
+}
+function cellBg(vr, col) {
+  const name = api.colors.rows[vr][col];
+  return api.colors.palette[name].bg;
+}
+
+// ---------- Audio player (single; only current track keeps position) ----------
+const player = { audio: new Audio(), orig: null, playing: false };
 player.audio.addEventListener("ended", () => {
   player.audio.currentTime = 0;
   player.playing = false;
   updatePlayButtons();
 });
-
 function stopPlayer() {
   player.audio.pause();
   player.audio.currentTime = 0;
-  player.index = null;
+  player.orig = null;
   player.playing = false;
 }
-
-async function playToggle(orderIndex) {
-  if (player.index === orderIndex) {
-    // Same track: toggle play/pause, keeping its current position.
+async function playToggle(orig) {
+  if (player.orig === orig) {
     if (player.playing) {
       player.audio.pause();
       player.playing = false;
@@ -37,185 +76,340 @@ async function playToggle(orderIndex) {
       player.playing = true;
     }
   } else {
-    // Different track: stop & reset the previous one, start this from 0s.
     player.audio.pause();
     player.audio.currentTime = 0;
-    const url = await api.fileUrl(state.folder, state.order[orderIndex]);
-    player.audio.src = url;
+    player.audio.src = await api.fileUrl(state.folder, orig);
     player.audio.currentTime = 0;
-    player.index = orderIndex;
+    player.orig = orig;
     await player.audio.play();
     player.playing = true;
   }
   updatePlayButtons();
 }
-
-// Update only the button glyphs (no full re-render, so playback isn't disturbed).
 function updatePlayButtons() {
   document.querySelectorAll(".play-btn").forEach((btn) => {
-    const idx = Number(btn.dataset.index);
-    const active = idx === player.index && player.playing;
+    const active = btn.dataset.orig === player.orig && player.playing;
     btn.textContent = active ? "⏸" : "▶";
     btn.classList.toggle("playing", active);
   });
 }
 
-const el = {
-  list: document.getElementById("list"),
-  emptyHint: document.getElementById("empty-hint"),
-  folderPath: document.getElementById("folder-path"),
-  status: document.getElementById("status"),
-  openBtn: document.getElementById("open-btn"),
-  previewBtn: document.getElementById("preview-btn"),
-  pdfBtn: document.getElementById("pdf-btn"),
-  saveDraftBtn: document.getElementById("save-draft-btn"),
-  commitBtn: document.getElementById("commit-btn"),
-  dropZone: document.getElementById("drop-zone"),
-  moveDialog: document.getElementById("move-dialog"),
-  moveText: document.getElementById("move-text"),
-  moveSwap: document.getElementById("move-swap"),
-  moveShift: document.getElementById("move-shift"),
-  moveRemember: document.getElementById("move-remember"),
-  moveCancel: document.getElementById("move-cancel"),
-};
+// ---------- Drag & drop ----------
+let drag = null; // { kind: 'slot'|'parked', index }
+
+function makeLine(entry, target) {
+  // target = { kind:'slot', slot } | { kind:'parked', index }
+  const line = document.createElement("div");
+  line.className = "line" + (entry ? "" : " line-empty");
+  if (target.kind === "slot") line.dataset.slot = String(target.slot);
+  else line.dataset.parked = String(target.index);
+
+  if (entry) {
+    line.draggable = true;
+    line.innerHTML =
+      `<button class="play-btn" data-orig="${escapeHtml(entry.orig)}" draggable="false">▶</button>` +
+      `<span class="lname" title="${escapeHtml(entry.base)}">${escapeHtml(displayName(entry.base))}</span>`;
+    line.querySelector(".play-btn").addEventListener("click", (e) => {
+      e.stopPropagation();
+      playToggle(entry.orig);
+    });
+    line.addEventListener("dragstart", (e) => {
+      if (e.target.closest && e.target.closest(".play-btn")) {
+        e.preventDefault();
+        return;
+      }
+      drag =
+        target.kind === "slot"
+          ? { kind: "slot", index: target.slot }
+          : { kind: "parked", index: target.index };
+      line.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", "line");
+    });
+    line.addEventListener("dragend", () => {
+      line.classList.remove("dragging");
+      document.querySelectorAll(".drop-target").forEach((r) => r.classList.remove("drop-target"));
+      drag = null;
+    });
+  }
+
+  // every slot line is a drop target; parked lines are not (parking auto-sorts)
+  if (target.kind === "slot") {
+    line.addEventListener("dragover", (e) => {
+      if (!drag) return;
+      e.preventDefault();
+      e.stopPropagation();
+      line.classList.add("drop-target");
+    });
+    line.addEventListener("dragleave", () => line.classList.remove("drop-target"));
+    line.addEventListener("drop", (e) => {
+      if (!drag) return;
+      e.preventDefault();
+      e.stopPropagation();
+      line.classList.remove("drop-target");
+      dropOnSlot(target.slot);
+    });
+  }
+  return line;
+}
+
+function dropOnSlot(slot) {
+  if (drag.kind === "slot") {
+    if (drag.index === slot) return;
+    const a = state.slots[drag.index];
+    state.slots[drag.index] = state.slots[slot];
+    state.slots[slot] = a;
+  } else {
+    // parked -> slot (swap displaced file back to parking)
+    const entry = state.parked.splice(drag.index, 1)[0];
+    const displaced = state.slots[slot];
+    state.slots[slot] = entry;
+    if (displaced) state.parked.push(displaced);
+    sortParked();
+  }
+  markDirty();
+}
+
+function dropOnParking() {
+  if (!drag || drag.kind !== "slot") return;
+  const entry = state.slots[drag.index];
+  if (!entry) return;
+  state.slots[drag.index] = null; // prefix removed (no slot anymore)
+  state.parked.push(entry);
+  sortParked();
+  markDirty();
+}
+
+function sortParked() {
+  state.parked.sort((a, b) =>
+    a.base.localeCompare(b.base, undefined, { sensitivity: "base" })
+  );
+}
 
 // ---------- Rendering ----------
-// Light background colour for a cell at visual row/col (physical key coding).
-function cellBg(vr, col) {
-  const name = api.colors.rows[vr][col];
-  return api.colors.palette[name].bg;
-}
-
-// Render one bank as a 5x5 grid laid out like the physical box:
-// bottom-left = key A (first slot), top-right = Y (mode key, blocked).
-function makeBankGrid(bankIndex) {
-  const bankNo = bankIndex + 1;
-  const start = bankIndex * BANK_SIZE + 1; // 1-based slot of key A in this bank
-
-  const wrap = document.createElement("div");
-  wrap.className = "bank";
-  const header = document.createElement("div");
-  header.className = "bank-header";
-  header.innerHTML = `Bank ${bankNo} <span class="keys">Slots ${start}–${
-    start + BANK_SIZE - 1
-  }</span>`;
-  wrap.appendChild(header);
-
-  const grid = document.createElement("div");
-  grid.className = "grid";
-  // visualRow 0 = top, 4 = bottom. Position alone identifies the key (no letters).
-  for (let vr = 0; vr < 5; vr++) {
-    for (let col = 0; col < 5; col++) {
-      const posIndex = (4 - vr) * 5 + col; // 0..24 in physical key order
-      const cell = document.createElement("div");
-      cell.style.background = cellBg(vr, col);
-
-      if (posIndex === 24) {
-        // Top-right key: mode button, not assignable
-        cell.className = "cell blocked";
-        cell.innerHTML = `<div class="cell-note">Mode</div>`;
-        grid.appendChild(cell);
-        continue;
-      }
-
-      const slot = start + posIndex;
-      const orderIndex = slot - 1;
-      const fname = state.order[orderIndex];
-
-      cell.className = "cell";
-      cell.dataset.index = String(orderIndex);
-      const active = orderIndex === player.index && player.playing;
-      const playBtn = fname
-        ? `<button class="play-btn${
-            active ? " playing" : ""
-          }" data-index="${orderIndex}" draggable="false">${
-            active ? "⏸" : "▶"
-          }</button>`
-        : "";
-      const top = `<div class="cell-top">${playBtn}<span class="slot">${naming.pad4(
-        naming.prefixForSlot(slot)
-      )}</span></div>`;
-
-      if (fname) {
-        if (finalName(slot, fname) !== fname) cell.classList.add("renamed");
-        cell.draggable = true;
-        cell.innerHTML =
-          top +
-          `<div class="fname" title="${escapeHtml(fname)} → ${escapeHtml(
-            finalName(slot, fname)
-          )}">${escapeHtml(fname)}</div>`;
-        const btn = cell.querySelector(".play-btn");
-        btn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          playToggle(orderIndex);
-        });
-      } else {
-        cell.classList.add("empty");
-        cell.innerHTML = top + `<div class="fname muted">—</div>`;
-      }
-      attachCellDnd(cell);
-      grid.appendChild(cell);
-    }
-  }
-  wrap.appendChild(grid);
-  return wrap;
-}
-
 function render() {
-  el.list.innerHTML = "";
-  el.emptyHint.classList.toggle("hidden", state.order.length > 0);
+  const has = countFiles() > 0;
+  el.emptyHint.classList.toggle("hidden", has);
 
-  if (state.order.length > 0) {
-    for (let b = 0; b < NUM_BANKS; b++) el.list.appendChild(makeBankGrid(b));
-
-    // Anything beyond the 144 slots gets a flagged overflow list.
-    if (state.order.length > TOTAL_SLOTS) {
-      const ov = document.createElement("div");
-      ov.className = "bank";
-      ov.innerHTML = `<div class="bank-header bank-overflow">⚠️ Überlauf – ${
-        state.order.length - TOTAL_SLOTS
-      } Datei(en) über Bank ${NUM_BANKS} (Slot &gt; ${TOTAL_SLOTS})</div>`;
-      for (let i = TOTAL_SLOTS; i < state.order.length; i++) {
-        const row = document.createElement("div");
-        row.className = "row renamed";
-        row.dataset.index = String(i);
-        row.draggable = true;
-        row.innerHTML = `<span class="slot">${naming.pad4(
-          naming.prefixForSlot(i + 1)
-        )}</span><span class="fname">${escapeHtml(state.order[i])}</span>`;
-        attachCellDnd(row);
-        ov.appendChild(row);
+  // --- main grid: 5x5 keys, each with 6 bank lines (PDF-style) ---
+  el.gridWrap.innerHTML = "";
+  if (has) {
+    const grid = document.createElement("div");
+    grid.className = "keygrid";
+    for (let vr = 0; vr < 5; vr++) {
+      for (let col = 0; col < 5; col++) {
+        const posIndex = (4 - vr) * 5 + col; // box layout
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        cell.style.background = cellBg(vr, col);
+        if (posIndex === 24) {
+          cell.classList.add("blocked");
+          cell.innerHTML = `<div class="cell-note">MODE</div>`;
+          grid.appendChild(cell);
+          continue;
+        }
+        for (let b = 0; b < NUM_BANKS; b++) {
+          const slot = b * BANK_SIZE + posIndex; // 0-based slot index
+          cell.appendChild(makeLine(state.slots[slot], { kind: "slot", slot }));
+        }
+        grid.appendChild(cell);
       }
-      el.list.appendChild(ov);
     }
+    el.gridWrap.appendChild(grid);
   }
 
-  const renames = state.order.filter(
-    (f, i) => finalName(i + 1, f) !== f
-  ).length;
-  el.status.textContent = state.order.length
-    ? `${state.order.length} Dateien · ${renames} werden umbenannt${
+  // --- parking area: rows of 5 boxes x 6 lines (alphabetical) ---
+  el.parkingWrap.innerHTML = "";
+  if (state.parked.length || has) {
+    const head = document.createElement("div");
+    head.className = "parking-head";
+    head.textContent = `Parkplätze (ohne Prefix) – ${state.parked.length}`;
+    el.parkingWrap.appendChild(head);
+
+    const boxes = document.createElement("div");
+    boxes.className = "parkboxes";
+    const groups = Math.max(5, Math.ceil(state.parked.length / 6));
+    for (let g = 0; g < groups; g++) {
+      const box = document.createElement("div");
+      box.className = "cell park";
+      for (let r = 0; r < 6; r++) {
+        const idx = g * 6 + r;
+        box.appendChild(
+          idx < state.parked.length
+            ? makeLine(state.parked[idx], { kind: "parked", index: idx })
+            : makeLine(null, { kind: "parked", index: idx })
+        );
+      }
+      boxes.appendChild(box);
+    }
+    el.parkingWrap.appendChild(boxes);
+
+    // dropping a slot line anywhere on the parking area unassigns it
+    boxes.addEventListener("dragover", (e) => {
+      if (drag && drag.kind === "slot") {
+        e.preventDefault();
+        boxes.classList.add("drop-target");
+      }
+    });
+    boxes.addEventListener("dragleave", () => boxes.classList.remove("drop-target"));
+    boxes.addEventListener("drop", (e) => {
+      if (drag && drag.kind === "slot") {
+        e.preventDefault();
+        boxes.classList.remove("drop-target");
+        dropOnParking();
+      }
+    });
+  }
+
+  updatePlayButtons();
+  updateToolbar();
+}
+
+function renamePlan() {
+  const plan = [];
+  state.slots.forEach((entry, i) => {
+    if (!entry) return;
+    const to = `${pad4(prefixForSlot(i + 1))}_${entry.base}`;
+    if (to !== entry.orig) plan.push({ from: entry.orig, to, entry, kind: "slot" });
+  });
+  for (const entry of state.parked) {
+    if (entry.base !== entry.orig)
+      plan.push({ from: entry.orig, to: entry.base, entry, kind: "parked" });
+  }
+  return plan;
+}
+
+function updateToolbar() {
+  const n = countFiles();
+  const renames = renamePlan().length;
+  el.status.textContent = n
+    ? `${n} Dateien · ${state.slots.filter(Boolean).length} platziert · ${state.parked.length} geparkt${
         state.dirty ? " · ungespeichert" : ""
       }`
     : "";
-  el.saveDraftBtn.disabled = !state.folder || state.order.length === 0;
+  el.saveDraftBtn.disabled = !state.folder || n === 0;
   el.commitBtn.disabled = !state.folder || renames === 0;
-  el.pdfBtn.disabled = state.order.length === 0;
-  el.previewBtn.disabled = state.order.length === 0;
+  el.previewBtn.disabled = n === 0;
+  el.pdfBtn.disabled = n === 0;
+  el.renameBtn.disabled = n === 0;
+  el.sdBtn.disabled = !state.folder || state.slots.filter(Boolean).length === 0;
 }
 
-// Display name for the printout: prefix and .mp3 extension stripped.
-function displayName(fname) {
-  return naming.stripPrefix(fname).replace(/\.mp3$/i, "");
+function markDirty() {
+  state.dirty = true;
+  render();
 }
 
-// Build a self-contained A4-landscape HTML page: a 5x5 key grid where every
-// cell lists all 6 banks (one line each), names truncated, no wrapping.
+// ---------- Loading ----------
+function autoAssign(filename) {
+  const { num } = naming.parsePrefix(filename);
+  const slot = num === null ? null : naming.slotFromPrefix(num);
+  const entry = { orig: filename, base: naming.stripPrefix(filename) };
+  if (slot !== null && state.slots[slot - 1] === null) state.slots[slot - 1] = entry;
+  else state.parked.push(entry);
+}
+
+function buildModel(files, draft) {
+  state.slots = new Array(TOTAL_SLOTS).fill(null);
+  state.parked = [];
+  const present = new Set(files);
+  const used = new Set();
+
+  if (draft && Array.isArray(draft.slots)) {
+    draft.slots.forEach((e, i) => {
+      if (e && present.has(e.orig)) {
+        state.slots[i] = { orig: e.orig, base: e.base };
+        used.add(e.orig);
+      }
+    });
+    for (const e of draft.parked || []) {
+      if (e && present.has(e.orig)) {
+        state.parked.push({ orig: e.orig, base: e.base });
+        used.add(e.orig);
+      }
+    }
+    for (const f of files) if (!used.has(f)) autoAssign(f);
+  } else {
+    for (const f of files) autoAssign(f);
+  }
+  sortParked();
+}
+
+async function loadFolder(folder) {
+  stopPlayer();
+  state.folder = folder;
+  el.folderPath.textContent = folder;
+  const files = await api.listMp3(folder);
+  const draft = await api.loadDraft(folder);
+  buildModel(files, draft);
+  state.dirty = false;
+  render();
+}
+
+async function reloadKeepingModel() {
+  const files = await api.listMp3(state.folder);
+  buildModel(files, draftFromState()); // keep current arrangement, add new files
+  markDirty();
+}
+function draftFromState() {
+  return { slots: state.slots, parked: state.parked };
+}
+
+// ---------- Toolbar actions ----------
+el.openBtn.addEventListener("click", async () => {
+  const folder = await api.pickFolder();
+  if (folder) await loadFolder(folder);
+});
+
+el.saveDraftBtn.addEventListener("click", async () => {
+  if (!state.folder) return;
+  await api.saveDraft(state.folder, draftFromState());
+  state.dirty = false;
+  el.status.textContent = "Zwischengespeichert ✔";
+  setTimeout(render, 1200);
+});
+
+el.commitBtn.addEventListener("click", async () => {
+  if (!state.folder) return;
+  const plan = renamePlan();
+  if (!plan.length) return;
+  if (!confirm(`${plan.length} Datei(en) werden auf der Festplatte umbenannt. Fortfahren?`)) return;
+  stopPlayer();
+  const res = await api.applyRenames(state.folder, plan.map((p) => ({ from: p.from, to: p.to })));
+  if (!res.ok) {
+    alert("Fehler beim Umbenennen: " + res.error);
+    return;
+  }
+  for (const p of plan) p.entry.orig = p.to; // model now matches disk
+  state.dirty = false;
+  await api.saveDraft(state.folder, draftFromState());
+  render();
+  el.status.textContent = `✅ ${res.renamed} Dateien umbenannt`;
+});
+
+el.previewBtn.addEventListener("click", async () => {
+  if (!countFiles()) return;
+  el.status.textContent = "Erzeuge Vorschau…";
+  const res = await api.previewPdf(buildPrintHtml());
+  el.status.textContent = res && res.error ? "Vorschau-Fehler: " + res.error : "";
+  if (res && res.error) alert("Vorschau-Fehler: " + res.error);
+});
+
+el.pdfBtn.addEventListener("click", async () => {
+  if (!countFiles()) return;
+  el.status.textContent = "Erzeuge PDF…";
+  const res = await api.exportPdf(buildPrintHtml());
+  if (res && res.ok) el.status.textContent = "PDF gespeichert: " + res.path;
+  else if (res && res.error) alert("PDF-Fehler: " + res.error);
+  else el.status.textContent = "";
+});
+
+// ---------- PDF (same 5x5 / 6-line layout) ----------
 function buildPrintHtml() {
   let cells = "";
   for (let vr = 0; vr < 5; vr++) {
     for (let col = 0; col < 5; col++) {
-      const posIndex = (4 - vr) * 5 + col; // physical key order, A bottom-left
+      const posIndex = (4 - vr) * 5 + col;
       const bg = cellBg(vr, col);
       if (posIndex === 24) {
         cells += `<div class="pcell blocked" style="background:${bg}"><div class="pmode">Mode</div></div>`;
@@ -223,11 +417,9 @@ function buildPrintHtml() {
       }
       let lines = "";
       for (let b = 0; b < NUM_BANKS; b++) {
-        const fname = state.order[b * BANK_SIZE + posIndex];
-        const text = fname ? escapeHtml(displayName(fname)) : "";
-        lines += `<div class="pline"><span class="pb">${
-          b + 1
-        }</span><span class="pt">${text}</span></div>`;
+        const entry = state.slots[b * BANK_SIZE + posIndex];
+        const text = entry ? escapeHtml(displayName(entry.base)) : "";
+        lines += `<div class="pline"><span class="pb">${b + 1}</span><span class="pt">${text}</span></div>`;
       }
       cells += `<div class="pcell" style="background:${bg}">${lines}</div>`;
     }
@@ -243,181 +435,192 @@ function buildPrintHtml() {
     .pt { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .pcell.blocked { display: flex; align-items: center; justify-content: center; }
     .pmode { font-size: 7pt; color: #666; text-transform: uppercase; letter-spacing: 0.5pt; }
-  </style></head><body>
-    <div class="pgrid">${cells}</div>
-  </body></html>`;
+  </style></head><body><div class="pgrid">${cells}</div></body></html>`;
 }
 
-function escapeHtml(s) {
-  return s.replace(
-    /[&<>"]/g,
-    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])
-  );
+// ---------- Renamer ----------
+function escapeRegExp(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
-
-function markDirty() {
-  state.dirty = true;
-  render();
+function buildRegex() {
+  const pat = el.rnSearch.value;
+  if (!pat) return null;
+  const flags = el.rnCase.checked ? "g" : "gi";
+  return new RegExp(el.rnRegex.checked ? pat : escapeRegExp(pat), flags);
 }
-
-// ---------- Drag & drop reordering ----------
-let dragFrom = null;
-
-function attachCellDnd(cell) {
-  cell.addEventListener("dragstart", (e) => {
-    if (!cell.draggable || (e.target.closest && e.target.closest(".play-btn"))) {
-      e.preventDefault();
-      return;
-    }
-    dragFrom = Number(cell.dataset.index);
-    cell.classList.add("dragging");
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", "cell"); // mark as internal reorder
-  });
-  cell.addEventListener("dragend", () => {
-    cell.classList.remove("dragging");
-    document
-      .querySelectorAll(".drop-target")
-      .forEach((r) => r.classList.remove("drop-target"));
-    dragFrom = null;
-  });
-  cell.addEventListener("dragover", (e) => {
-    if (dragFrom === null) return; // external file drag handled elsewhere
-    e.preventDefault();
-    e.stopPropagation();
-    cell.classList.add("drop-target");
-  });
-  cell.addEventListener("dragleave", () => cell.classList.remove("drop-target"));
-  cell.addEventListener("drop", async (e) => {
-    if (dragFrom === null) return;
-    e.preventDefault();
-    e.stopPropagation();
-    cell.classList.remove("drop-target");
-    const to = Number(cell.dataset.index);
-    if (to === dragFrom) return;
-    if (to >= state.order.length) {
-      // Dropped on an empty trailing slot -> just move the file to the end.
-      const [item] = state.order.splice(dragFrom, 1);
-      state.order.push(item);
-      markDirty();
-      return;
-    }
-    await applyMove(dragFrom, to);
-  });
+function applyReplace(base, re) {
+  return base.replace(re, el.rnReplace.value);
 }
-
-async function applyMove(from, to) {
-  const choice = rememberedMove || (await askMove(from, to));
-  if (!choice) return; // cancelled
-  if (choice === "swap") {
-    const tmp = state.order[from];
-    state.order[from] = state.order[to];
-    state.order[to] = tmp;
-  } else {
-    // shift: remove from old position, insert at target (push following down)
-    const [item] = state.order.splice(from, 1);
-    state.order.splice(to, 0, item);
+function allEntries() {
+  return [...state.slots.filter(Boolean), ...state.parked];
+}
+function refreshRenamePreview() {
+  el.rnError.textContent = "";
+  let re;
+  try {
+    re = buildRegex();
+  } catch (err) {
+    el.rnError.textContent = "Ungültiger Regex: " + err.message;
+    el.rnApply.disabled = true;
+    el.rnPreview.innerHTML = "";
+    el.rnCount.textContent = "";
+    return;
   }
-  markDirty();
-}
-
-function askMove(from, to) {
-  return new Promise((resolve) => {
-    el.moveText.textContent = `„${state.order[from]}" auf Slot ${
-      to + 1
-    } verschieben:`;
-    el.moveRemember.checked = false;
-    el.moveDialog.classList.remove("hidden");
-
-    const finish = (val) => {
-      el.moveDialog.classList.add("hidden");
-      el.moveSwap.onclick = el.moveShift.onclick = el.moveCancel.onclick = null;
-      if (val && el.moveRemember.checked) rememberedMove = val;
-      resolve(val);
-    };
-    el.moveSwap.onclick = () => finish("swap");
-    el.moveShift.onclick = () => finish("shift");
-    el.moveCancel.onclick = () => finish(null);
-  });
-}
-
-// ---------- Loading ----------
-async function loadFolder(folder) {
-  stopPlayer();
-  state.folder = folder;
-  el.folderPath.textContent = folder;
-  const files = await api.listMp3(folder);
-  const draft = await api.loadDraft(folder);
-
-  if (draft && Array.isArray(draft.order)) {
-    // Keep the draft order, drop missing files, append new ones at the end.
-    const present = new Set(files);
-    const kept = draft.order.filter((f) => present.has(f));
-    const known = new Set(kept);
-    const added = files.filter((f) => !known.has(f));
-    state.order = kept.concat(naming.buildInitialOrder(added));
-  } else {
-    state.order = naming.buildInitialOrder(files);
+  if (!re) {
+    el.rnPreview.innerHTML = "";
+    el.rnCount.textContent = "";
+    el.rnApply.disabled = true;
+    return;
   }
-  state.dirty = false;
-  render();
-}
-
-// ---------- Toolbar ----------
-el.openBtn.addEventListener("click", async () => {
-  const folder = await api.pickFolder();
-  if (folder) await loadFolder(folder);
-});
-
-el.previewBtn.addEventListener("click", async () => {
-  if (!state.order.length) return;
-  el.status.textContent = "Erzeuge Vorschau…";
-  const res = await api.previewPdf(buildPrintHtml());
-  el.status.textContent = res && res.error ? "Vorschau-Fehler: " + res.error : "";
-  if (res && res.error) alert("Vorschau-Fehler: " + res.error);
-});
-
-el.pdfBtn.addEventListener("click", async () => {
-  if (!state.order.length) return;
-  el.status.textContent = "Erzeuge PDF…";
-  const res = await api.exportPdf(buildPrintHtml());
-  if (res && res.ok) el.status.textContent = "PDF gespeichert: " + res.path;
-  else if (res && res.error) alert("PDF-Fehler: " + res.error);
-  else el.status.textContent = "";
-});
-
-el.saveDraftBtn.addEventListener("click", async () => {
-  if (!state.folder) return;
-  await api.saveDraft(state.folder, { order: state.order });
-  state.dirty = false;
-  el.status.textContent = "Zwischengespeichert ✔";
-  setTimeout(render, 1200);
-});
-
-el.commitBtn.addEventListener("click", async () => {
-  if (!state.folder) return;
-  const renames = state.order.filter((f, i) => finalName(i + 1, f) !== f).length;
-  if (
-    !confirm(
-      `${renames} Datei(en) werden jetzt auf der Festplatte umbenannt. Fortfahren?`
+  const affected = [];
+  for (const e of allEntries()) {
+    const nb = applyReplace(e.base, re);
+    if (nb !== e.base) affected.push([e.base, nb]);
+  }
+  el.rnCount.textContent = `${affected.length} betroffen`;
+  el.rnApply.disabled = affected.length === 0;
+  el.rnPreview.innerHTML = affected
+    .map(
+      ([a, b]) =>
+        `<div class="rn-row"><span class="rn-old">${escapeHtml(displayName(a))}</span>` +
+        `<span class="rn-arrow">→</span><span class="rn-new">${escapeHtml(displayName(b))}</span></div>`
     )
-  )
-    return;
-  stopPlayer(); // release file handles before renaming on disk
-  const res = await api.commitRename(state.folder, state.order);
-  if (!res.ok) {
-    alert("Fehler beim Umbenennen: " + res.error);
+    .join("");
+}
+function openRenamer() {
+  el.rnSearch.value = "";
+  el.rnReplace.value = "";
+  el.rnRegex.checked = false;
+  el.rnCase.checked = false;
+  refreshRenamePreview();
+  el.rnDialog.classList.remove("hidden");
+  el.rnSearch.focus();
+}
+el.renameBtn.addEventListener("click", openRenamer);
+el.rnCancel.addEventListener("click", () => el.rnDialog.classList.add("hidden"));
+for (const elm of [el.rnSearch, el.rnReplace, el.rnRegex, el.rnCase]) {
+  elm.addEventListener("input", refreshRenamePreview);
+  elm.addEventListener("change", refreshRenamePreview);
+}
+el.rnApply.addEventListener("click", () => {
+  let re;
+  try {
+    re = buildRegex();
+  } catch {
     return;
   }
-  state.order = res.order;
-  state.dirty = false;
-  render();
-  el.status.textContent = `✅ ${res.renamed} Dateien umbenannt`;
+  if (!re) return;
+  for (const e of allEntries()) e.base = applyReplace(e.base, re);
+  sortParked();
+  el.rnDialog.classList.add("hidden");
+  markDirty();
 });
+
+// ---------- SD card export ----------
+el.sdBtn.addEventListener("click", openSdDialog);
+
+async function openSdDialog() {
+  const slotted = state.slots
+    .map((e, i) => (e ? { orig: e.orig, name: `${pad4(prefixForSlot(i + 1))}_${e.base}` } : null))
+    .filter(Boolean);
+  if (!slotted.length) return;
+
+  const res = await api.listRemovableDrives();
+  const drives = (res && res.drives) || [];
+
+  const overlay = document.createElement("div");
+  overlay.className = "overlay";
+  const driveRows = drives
+    .map(
+      (d, i) =>
+        `<button class="sd-drive" data-i="${i}">💳 ${escapeHtml(d.label || d.mount)} ` +
+        `<span class="muted">${escapeHtml(d.size || "")} · ${escapeHtml(d.mount)}</span></button>`
+    )
+    .join("");
+  overlay.innerHTML = `
+    <div class="dialog wide">
+      <h3>Auf SD-Karte schieben (${slotted.length} Dateien)</h3>
+      ${drives.length ? `<p class="muted">Wechseldatenträger:</p>${driveRows}` : `<p class="muted">Keine Wechseldatenträger erkannt.</p>`}
+      <div class="dialog-buttons">
+        <button id="sd-pick" class="link">📂 Ordner wählen…</button>
+        <button id="sd-cancel" class="link">Abbrechen</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  const close = () => overlay.remove();
+  overlay.querySelector("#sd-cancel").onclick = close;
+  overlay.querySelector("#sd-pick").onclick = async () => {
+    close();
+    const dir = await api.pickFolder();
+    if (dir) await copyToCard(dir, slotted, null);
+  };
+  overlay.querySelectorAll(".sd-drive").forEach((btn) => {
+    btn.onclick = async () => {
+      close();
+      const d = drives[Number(btn.dataset.i)];
+      let doFormat = false;
+      const ans = await sdFormatPrompt(d);
+      if (ans === "cancel") return;
+      doFormat = ans === "format";
+      await copyToCard(d.mount, slotted, doFormat ? d : null);
+    };
+  });
+}
+
+function sdFormatPrompt(d) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.className = "overlay";
+    overlay.innerHTML = `
+      <div class="dialog">
+        <h3>SD-Karte „${escapeHtml(d.label || d.mount)}"</h3>
+        <p>Vor dem Kopieren formatieren? <b>Alle Daten auf der Karte gehen verloren.</b>
+        Formatieren kann Administratorrechte erfordern.</p>
+        <div class="dialog-buttons">
+          <button id="f-yes" class="danger">Formatieren & Kopieren</button>
+          <button id="f-no" class="primary">Nur kopieren</button>
+        </div>
+        <button id="f-cancel" class="link">Abbrechen</button>
+      </div>`;
+    document.body.appendChild(overlay);
+    const done = (v) => {
+      overlay.remove();
+      resolve(v);
+    };
+    overlay.querySelector("#f-yes").onclick = () => done("format");
+    overlay.querySelector("#f-no").onclick = () => done("copy");
+    overlay.querySelector("#f-cancel").onclick = () => done("cancel");
+  });
+}
+
+async function copyToCard(mount, items, driveToFormat) {
+  if (driveToFormat) {
+    el.status.textContent = "Formatiere…";
+    const fr = await api.formatDrive(driveToFormat);
+    if (!fr.ok) {
+      if (fr.unsupported) {
+        alert("Formatieren wird auf diesem System nicht unterstützt – kopiere ohne Formatieren.");
+      } else {
+        if (!confirm("Formatieren fehlgeschlagen (" + (fr.error || "") + ").\nTrotzdem kopieren?")) {
+          el.status.textContent = "";
+          return;
+        }
+      }
+    }
+  }
+  const targetDir = mount.replace(/[\\/]+$/, "") + "/MP3";
+  el.status.textContent = "Kopiere auf SD-Karte…";
+  const res = await api.copyToCard(state.folder, targetDir, items);
+  if (res.ok) el.status.textContent = `✅ ${res.copied} Dateien nach ${targetDir} kopiert`;
+  else {
+    el.status.textContent = "";
+    alert("Kopieren fehlgeschlagen: " + res.error);
+  }
+}
 
 // ---------- External drag & drop (load folder / add files) ----------
 el.dropZone.addEventListener("dragover", (e) => {
-  if (dragFrom !== null) return; // internal reorder
+  if (drag) return;
   e.preventDefault();
   el.dropZone.classList.add("dragover");
 });
@@ -425,14 +628,12 @@ el.dropZone.addEventListener("dragleave", (e) => {
   if (e.target === el.dropZone) el.dropZone.classList.remove("dragover");
 });
 el.dropZone.addEventListener("drop", async (e) => {
-  if (dragFrom !== null) return; // handled by row drop
+  if (drag) return;
   e.preventDefault();
   el.dropZone.classList.remove("dragover");
-
   const paths = [...e.dataTransfer.files].map((f) => api.pathForFile(f)).filter(Boolean);
   if (!paths.length) return;
   const info = await api.inspectPaths(paths);
-
   const dir = info.find((i) => i.isDir);
   if (dir) {
     await loadFolder(dir.path);
@@ -440,24 +641,14 @@ el.dropZone.addEventListener("drop", async (e) => {
   }
   const mp3s = info.filter((i) => i.name.toLowerCase().endsWith(".mp3"));
   if (!mp3s.length) return;
-
   if (state.folder) {
     const n = await api.copyInto(state.folder, mp3s.map((i) => i.path));
     el.status.textContent = `${n} Datei(en) hinzugefügt`;
-    await reloadKeepingOrder();
+    await reloadKeepingModel();
   } else {
-    // No folder yet: adopt the parent directory of the dropped files.
     await loadFolder(mp3s[0].dir);
   }
 });
 
-// Reload file list but keep the current manual order (new files appended).
-async function reloadKeepingOrder() {
-  const files = await api.listMp3(state.folder);
-  const present = new Set(files);
-  const kept = state.order.filter((f) => present.has(f));
-  const known = new Set(kept);
-  const added = files.filter((f) => !known.has(f));
-  state.order = kept.concat(naming.buildInitialOrder(added));
-  markDirty();
-}
+// Test hook (used by the headless capture/smoke scripts; harmless in normal use).
+window.__sbTest = { loadFolder, get state() { return state; } };

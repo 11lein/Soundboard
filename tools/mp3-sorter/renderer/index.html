@@ -17,12 +17,12 @@
       </div>
       <div class="toolbar">
         <span id="status" class="muted"></span>
+        <button id="rename-btn" disabled>✏️ Umbenennen</button>
+        <button id="sd-btn" disabled>💳 Auf SD-Karte</button>
         <button id="preview-btn" disabled>👁️ Vorschau</button>
-        <button id="pdf-btn" disabled>🖨️ PDF (A4)</button>
+        <button id="pdf-btn" disabled>🖨️ PDF</button>
         <button id="save-draft-btn" disabled>💾 Zwischenspeichern</button>
-        <button id="commit-btn" class="primary" disabled>
-          ✅ Final speichern (umbenennen)
-        </button>
+        <button id="commit-btn" class="primary" disabled>✅ Final speichern</button>
       </div>
     </header>
 
@@ -30,25 +30,34 @@
       <div id="empty-hint" class="empty-hint">
         <p>📂 Ordner öffnen oder MP3-Dateien hierher ziehen</p>
         <p class="muted">
-          6 Bänke × 24 = 144 Slots. Prefix <code>0001_</code> bestimmt die
-          Position, Dateien ohne Prefix landen alphabetisch dahinter.
+          6 Bänke × 24 Tasten als 5×5-Raster (jede Taste = 6 Bänke untereinander).
+          Dateien mit gültigem <code>0101_</code>-Prefix landen auf ihrem Platz,
+          alle anderen unten in den Parkplätzen (alphabetisch).
         </p>
       </div>
-      <div id="list"></div>
+      <div id="grid-wrap"></div>
+      <div id="parking-wrap"></div>
     </main>
 
-    <!-- Move dialog: swap vs shift -->
-    <div id="move-dialog" class="overlay hidden">
-      <div class="dialog">
-        <p id="move-text"></p>
-        <div class="dialog-buttons">
-          <button id="move-swap">🔁 Tauschen</button>
-          <button id="move-shift" class="primary">⬇️ Folgende verschieben</button>
+    <!-- Renamer dialog -->
+    <div id="rename-dialog" class="overlay hidden">
+      <div class="dialog wide">
+        <h3>Dateien umbenennen (Suchen &amp; Ersetzen)</h3>
+        <div class="rename-fields">
+          <label>Suchen <input type="text" id="rn-search" /></label>
+          <label>Ersetzen <input type="text" id="rn-replace" /></label>
+          <label class="cb"><input type="checkbox" id="rn-regex" /> Regex</label>
+          <label class="cb"><input type="checkbox" id="rn-case" /> Groß/Klein beachten</label>
         </div>
-        <label class="remember">
-          <input type="checkbox" id="move-remember" /> Für diese Sitzung merken
-        </label>
-        <button id="move-cancel" class="link">Abbrechen</button>
+        <div id="rn-error" class="rn-error"></div>
+        <div class="rn-preview-head">
+          <span id="rn-count" class="muted"></span>
+        </div>
+        <div id="rn-preview" class="rn-preview"></div>
+        <div class="dialog-buttons">
+          <button id="rn-cancel" class="link">Abbrechen</button>
+          <button id="rn-apply" class="primary" disabled>Übernehmen</button>
+        </div>
       </div>
     </div>
 

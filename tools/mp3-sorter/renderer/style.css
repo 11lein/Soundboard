@@ -205,92 +205,23 @@ main.dragover {
   margin-bottom: 8px;
 }
 
-/* ---------- Bank 5x5 grid (box-faithful layout) ---------- */
-#list {
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
-}
-.bank {
-  max-width: 820px;
-}
-.grid {
+/* ---------- 5x5 key grid, each cell = 6 bank lines (PDF-style) ---------- */
+.keygrid,
+.parkboxes {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 6px;
-  margin-top: 6px;
 }
 .cell {
-  /* background is set inline per physical key colour; dark text on light bg */
   color: #1b1b1f;
   border: 1px solid #00000030;
   border-radius: 8px;
-  min-height: 66px;
-  padding: 6px 8px;
-  cursor: grab;
+  padding: 3px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   overflow: hidden;
-}
-.cell:hover {
-  box-shadow: inset 0 0 0 2px #00000033;
-}
-.cell.dragging {
-  opacity: 0.4;
-}
-.cell.drop-target {
-  outline: 2px solid #1b1b1f;
-}
-.cell-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.play-btn {
-  background: #ffffffcc;
-  color: #1b1b1f;
-  border: 1px solid #00000033;
-  border-radius: 50%;
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  font-size: 11px;
-  line-height: 1;
-  cursor: pointer;
-  flex: none;
-}
-.play-btn:hover {
-  background: #fff;
-}
-.play-btn.playing {
-  background: #1b1b1f;
-  color: #fff;
-  border-color: #1b1b1f;
-}
-.cell .slot {
-  font-variant-numeric: tabular-nums;
-  color: #00000088;
-  font-size: 10px;
-  min-width: 0;
-}
-.cell .fname {
-  font-size: 12px;
-  color: #1b1b1f;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.cell.renamed .slot::after {
-  content: " ✎";
-  color: #1f9d57;
-}
-.cell.empty {
-  border-style: dashed;
-  cursor: default;
-}
-.cell.empty .fname {
-  color: #00000055;
+  min-height: 96px;
 }
 .cell.blocked {
   border-style: dashed;
@@ -303,4 +234,169 @@ main.dragover {
   color: #00000099;
   text-transform: uppercase;
   letter-spacing: 1px;
+}
+
+.line {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 15px;
+  border-radius: 3px;
+  padding: 0 2px;
+  cursor: grab;
+}
+.line:hover {
+  background: #00000018;
+}
+.line.dragging {
+  opacity: 0.4;
+}
+.line.drop-target {
+  outline: 2px solid #1b1b1f;
+  outline-offset: -1px;
+}
+.line-empty {
+  cursor: default;
+  border: 1px dashed #00000022;
+  height: 15px;
+}
+.lname {
+  font-size: 11px;
+  color: #1b1b1f;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.play-btn {
+  background: #ffffffcc;
+  color: #1b1b1f;
+  border: 1px solid #00000033;
+  border-radius: 50%;
+  width: 15px;
+  height: 15px;
+  padding: 0;
+  font-size: 8px;
+  line-height: 1;
+  cursor: pointer;
+  flex: none;
+}
+.play-btn:hover {
+  background: #fff;
+}
+.play-btn.playing {
+  background: #1b1b1f;
+  color: #fff;
+  border-color: #1b1b1f;
+}
+
+/* ---------- Parking area ---------- */
+#parking-wrap {
+  margin-top: 18px;
+}
+.parking-head {
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 6px;
+  color: var(--muted);
+  border-top: 1px solid #00000060;
+  padding-top: 12px;
+}
+.cell.park {
+  background: #2b2d34;
+  color: var(--text);
+}
+.cell.park .lname {
+  color: var(--text);
+}
+.parkboxes.drop-target {
+  outline: 2px dashed var(--accent);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+/* ---------- Renamer dialog ---------- */
+.dialog.wide {
+  width: 640px;
+  max-width: 92vw;
+  text-align: left;
+}
+.dialog.wide h3 {
+  margin: 0 0 12px;
+}
+.rename-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+.rename-fields label {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+  gap: 3px;
+  flex: 1 1 200px;
+}
+.rename-fields label.cb {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+.rename-fields input[type="text"] {
+  background: var(--row);
+  color: var(--text);
+  border: 1px solid #00000050;
+  border-radius: 6px;
+  padding: 7px 9px;
+  font-size: 13px;
+}
+.rn-error {
+  color: var(--danger);
+  font-size: 12px;
+  min-height: 16px;
+  margin: 6px 0;
+}
+.rn-preview {
+  max-height: 320px;
+  overflow-y: auto;
+  background: #00000030;
+  border-radius: 8px;
+  padding: 6px;
+  margin-bottom: 12px;
+}
+.rn-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 8px;
+  align-items: center;
+  padding: 3px 6px;
+  font-size: 12px;
+}
+.rn-old {
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rn-new {
+  color: var(--accent-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rn-arrow {
+  color: var(--accent);
+}
+
+/* ---------- SD dialog ---------- */
+.sd-drive {
+  display: block;
+  width: 100%;
+  text-align: left;
+  margin: 4px 0;
+}
+button.danger {
+  background: var(--danger);
+  border-color: transparent;
 }

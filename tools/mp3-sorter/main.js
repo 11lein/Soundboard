@@ -2,9 +2,13 @@ const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const path = require("path");
 const fs = require("fs/promises");
 const os = require("os");
+const { execFile } = require("child_process");
+const { promisify } = require("util");
 const { pathToFileURL } = require("url");
 const naming = require("./lib/naming");
 const keyColors = require("./lib/key-colors.json");
+
+const execFileP = promisify(execFile);
 
 const DRAFT_FILE = ".mp3sorter.json"; // intermediate state, lives in the folder
 
@@ -173,32 +177,24 @@ ipcMain.handle("preview-pdf", async (_e, html) => {
   }
 });
 
-// --- IPC: commit renames (two-phase to avoid collisions) ---
-// order: array of original filenames in slot order (index 0 -> slot 1)
-ipcMain.handle("commit-rename", async (_e, folder, order) => {
-  // Plan: original name -> final name.
-  const plan = order.map((orig, i) => ({
-    orig,
-    final: naming.finalName(i + 1, orig),
-  }));
-
-  // Skip no-ops; detect duplicate target names up front.
+// --- IPC: apply a rename plan (two-phase to avoid collisions) ---
+// plan: array of { from, to } filenames within `folder`.
+ipcMain.handle("apply-renames", async (_e, folder, plan) => {
+  // Detect duplicate target names up front.
   const targets = new Set();
   for (const p of plan) {
-    if (targets.has(p.final)) {
-      return { ok: false, error: `Doppelter Zielname: ${p.final}` };
-    }
-    targets.add(p.final);
+    if (targets.has(p.to)) return { ok: false, error: `Doppelter Zielname: ${p.to}` };
+    targets.add(p.to);
   }
 
-  const toRename = plan.filter((p) => p.orig !== p.final);
+  const toRename = plan.filter((p) => p.from !== p.to);
   const tmpSuffix = `.mp3sorter.tmp.${process.pid}`;
 
   try {
-    // Phase 1: move every file that changes to a unique temp name.
+    // Phase 1: move every changing file to a unique temp name.
     for (let i = 0; i < toRename.length; i++) {
       await fs.rename(
-        path.join(folder, toRename[i].orig),
+        path.join(folder, toRename[i].from),
         path.join(folder, `__${i}${tmpSuffix}`)
       );
     }
@@ -206,23 +202,109 @@ ipcMain.handle("commit-rename", async (_e, folder, order) => {
     for (let i = 0; i < toRename.length; i++) {
       await fs.rename(
         path.join(folder, `__${i}${tmpSuffix}`),
-        path.join(folder, toRename[i].final)
+        path.join(folder, toRename[i].to)
       );
     }
   } catch (err) {
     return { ok: false, error: String(err && err.message ? err.message : err) };
   }
+  return { ok: true, renamed: toRename.length };
+});
 
-  // Refresh the draft so it reflects the now-renamed files.
-  const newOrder = plan.map((p) => p.final);
-  await fs.writeFile(
-    path.join(folder, DRAFT_FILE),
-    JSON.stringify(
-      { savedAt: new Date().toISOString(), order: newOrder },
-      null,
-      2
-    ),
-    "utf8"
-  );
-  return { ok: true, renamed: toRename.length, order: newOrder };
+// --- IPC: list removable drives (best-effort, per OS) ---
+ipcMain.handle("list-removable-drives", async () => {
+  try {
+    if (process.platform === "linux") {
+      const { stdout } = await execFileP("lsblk", [
+        "-J", "-o", "NAME,SIZE,TYPE,RM,MOUNTPOINT,LABEL,PATH",
+      ]);
+      const data = JSON.parse(stdout);
+      const out = [];
+      const walk = (nodes) => {
+        for (const n of nodes || []) {
+          if (n.rm && n.mountpoint && n.type === "part") {
+            out.push({
+              label: n.label || n.name,
+              size: n.size,
+              mount: n.mountpoint,
+              device: n.path,
+            });
+          }
+          if (n.children) walk(n.children);
+        }
+      };
+      walk(data.blockdevices);
+      return { ok: true, drives: out };
+    }
+    if (process.platform === "win32") {
+      const { stdout } = await execFileP("wmic", [
+        "logicaldisk", "where", "drivetype=2", "get", "deviceid,volumename,size", "/format:csv",
+      ]);
+      const drives = stdout
+        .split(/\r?\n/).slice(1).map((l) => l.trim()).filter(Boolean)
+        .map((l) => l.split(","))
+        .filter((c) => c.length >= 4)
+        .map((c) => ({ label: c[3] || c[1], size: c[2], mount: c[1] + "\\", device: c[1] }));
+      return { ok: true, drives };
+    }
+    if (process.platform === "darwin") {
+      const { stdout } = await execFileP("df", ["-l"]);
+      const drives = stdout
+        .split("\n").slice(1)
+        .filter((l) => l.includes("/Volumes/"))
+        .map((l) => {
+          const m = l.match(/^(\S+).*\s(\/Volumes\/.+)$/);
+          return m ? { label: path.basename(m[2]), size: "", mount: m[2], device: m[1] } : null;
+        })
+        .filter(Boolean);
+      return { ok: true, drives };
+    }
+    return { ok: true, drives: [] };
+  } catch (err) {
+    return { ok: false, error: String(err && err.message ? err.message : err), drives: [] };
+  }
+});
+
+// --- IPC: format a removable drive as FAT32 (best-effort, may need privileges) ---
+ipcMain.handle("format-drive", async (_e, drive) => {
+  try {
+    if (process.platform === "linux") {
+      // Unmount then mkfs.vfat (needs privileges; reports clearly if not allowed).
+      await execFileP("umount", [drive.device]).catch(() => {});
+      await execFileP("mkfs.vfat", ["-F", "32", "-n", "SOUNDBOARD", drive.device]);
+      return { ok: true };
+    }
+    if (process.platform === "darwin") {
+      await execFileP("diskutil", ["eraseVolume", "MS-DOS", "SOUNDBOARD", drive.device]);
+      return { ok: true };
+    }
+    if (process.platform === "win32") {
+      const letter = String(drive.device).replace(/\\$/, "");
+      await execFileP("cmd", ["/c", "format", letter, "/FS:FAT32", "/Q", "/Y", "/V:SOUNDBOARD"]);
+      return { ok: true };
+    }
+    return { ok: false, unsupported: true };
+  } catch (err) {
+    return { ok: false, error: String(err && err.message ? err.message : err) };
+  }
+});
+
+// --- IPC: copy files to the SD card ---
+// srcFolder: source folder; targetDir: destination (e.g. card mount + /MP3)
+// items: [{ orig (source filename), name (target filename) }]
+ipcMain.handle("copy-to-card", async (_e, srcFolder, targetDir, items) => {
+  try {
+    await fs.mkdir(targetDir, { recursive: true });
+    let copied = 0;
+    for (const it of items) {
+      await fs.copyFile(
+        path.join(srcFolder, it.orig),
+        path.join(targetDir, it.name)
+      );
+      copied++;
+    }
+    return { ok: true, copied };
+  } catch (err) {
+    return { ok: false, error: String(err && err.message ? err.message : err) };
+  }
 });

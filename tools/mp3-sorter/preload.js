@@ -8,8 +8,12 @@ contextBridge.exposeInMainWorld("api", {
   listMp3: (folder) => ipcRenderer.invoke("list-mp3", folder),
   loadDraft: (folder) => ipcRenderer.invoke("load-draft", folder),
   saveDraft: (folder, state) => ipcRenderer.invoke("save-draft", folder, state),
-  commitRename: (folder, order) =>
-    ipcRenderer.invoke("commit-rename", folder, order),
+  applyRenames: (folder, plan) =>
+    ipcRenderer.invoke("apply-renames", folder, plan),
+  listRemovableDrives: () => ipcRenderer.invoke("list-removable-drives"),
+  formatDrive: (drive) => ipcRenderer.invoke("format-drive", drive),
+  copyToCard: (srcFolder, targetDir, items) =>
+    ipcRenderer.invoke("copy-to-card", srcFolder, targetDir, items),
   inspectPaths: (paths) => ipcRenderer.invoke("inspect-paths", paths),
   copyInto: (folder, paths) => ipcRenderer.invoke("copy-into", folder, paths),
   exportPdf: (html) => ipcRenderer.invoke("export-pdf", html),
