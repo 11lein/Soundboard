@@ -1,0 +1,18 @@
+{
+  "description": "Physische Farb-Kodierung der 5x5-Tastenmatrix des Soundboards. rows[0] = oberste Reihe (visuell), rows[4] = unterste. Spalte 0 = links. Gilt fuer alle 6 Baenke gleich.",
+  "palette": {
+    "green":  { "label": "Grün",    "bg": "#9ed79f", "swatch": "#43c463" },
+    "yellow": { "label": "Gelb",    "bg": "#ecd87f", "swatch": "#edcb2e" },
+    "white":  { "label": "Weiß",    "bg": "#d7dbe3", "swatch": "#dfe3e6" },
+    "blue":   { "label": "Blau",    "bg": "#9cc2ea", "swatch": "#3d93e0" },
+    "black":  { "label": "Schwarz", "bg": "#9aa0ad", "swatch": "#3a3d44" },
+    "red":    { "label": "Rot",     "bg": "#eca093", "swatch": "#e2503f" }
+  },
+  "rows": [
+    ["green",  "green",  "green",  "green",  "green"],
+    ["yellow", "yellow", "yellow", "yellow", "yellow"],
+    ["white",  "white",  "white",  "white",  "white"],
+    ["blue",   "blue",   "blue",   "blue",   "blue"],
+    ["black",  "red",    "black",  "black",  "black"]
+  ]
+}
