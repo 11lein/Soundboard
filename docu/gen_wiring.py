@@ -172,6 +172,16 @@ for esp_name, dfp_name, key, midx in route:
     y2 = dfp_pin_y[dfp_name]
     wire([(ex + ew, y1), (midx, y1), (midx, y2), (dx, y2)], WIRE[key])
 
+# 1 kΩ series resistor in the DFPlayer RX line (ESP GPIO23 -> DFPlayer RX),
+# drawn as an IEC rectangle on the horizontal run just before the RX pin.
+rxy = dfp_pin_y["RX"]
+parts.append(
+    f'<rect x="636" y="{rxy-9}" width="50" height="18" rx="3" '
+    f'fill="#f3ead0" stroke="#9a7d2e" stroke-width="2"/>'
+)
+text(661, rxy - 14, "1 kΩ", size=11, anchor="middle",
+     fill="#7a6320", weight="bold")
+
 # speaker wires
 wire([(dx + 40, dy + dh), (dx + 40, sy - 6), (sx - 18, sy - 6)], WIRE["spk"])
 wire([(dx + dw - 40, dy + dh), (dx + dw - 40, sy + 18), (sx + 18, sy + 18)], WIRE["spk"])
@@ -181,7 +191,7 @@ tx0, ty0 = pax + 24, 200
 text(tx0, ty0 - 14, "Audio-Verbindungen", size=15, weight="bold")
 audio_rows = [
     ("DFPlayer VCC", "ESP 5V", "5v"),
-    ("DFPlayer RX", "ESP GPIO23 (TX2)", "rx"),
+    ("DFPlayer RX", "ESP GPIO23 (TX2) · 1 kΩ", "rx"),
     ("DFPlayer TX", "ESP GPIO22 (RX2)", "tx"),
     ("DFPlayer BUSY", "ESP GPIO4", "busy"),
     ("DFPlayer GND", "ESP GND", "gnd"),

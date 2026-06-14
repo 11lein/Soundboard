@@ -78,7 +78,7 @@ Für die korrekte Verkabelung siehe
 | DFPlayer Pin | ESP32 Pin |
 |--------------|-----------|
 | TX           | GPIO22    |
-| RX           | GPIO23    |
+| RX           | GPIO23 **(über 1 kΩ in Reihe)** |
 | BUSY         | GPIO4     |
 | VCC          | 5V        |
 | GND          | GND       |
@@ -86,6 +86,9 @@ Für die korrekte Verkabelung siehe
 | SPK1     | Left Audio  |
 | GND      | GND Audio   |
 | SPK2     | Right Audio |
+
+> Der **1 kΩ-Widerstand** in der RX-Leitung (ESP-TX → DFPlayer-RX) dämpft Störungen
+> und schützt den DFPlayer-Eingang – eine gängige Empfehlung für stabile UART-Kommunikation.
 
 
 💾 SD-Karte:  
