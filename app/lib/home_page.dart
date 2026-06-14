@@ -147,12 +147,19 @@ class _HomePageState extends State<HomePage> {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       child: Row(
         children: [
+          const Padding(
+            padding: EdgeInsets.only(right: 6),
+            child: Text('Bank', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
           for (int b = 1; b <= 6; b++)
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 3),
                 child: ChoiceChip(
-                  label: Text('Bank $b'),
+                  label: Text('$b', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  labelPadding: EdgeInsets.zero,
+                  showCheckmark: false,
+                  visualDensity: VisualDensity.compact,
                   selected: controller.activeBank == b,
                   onSelected: (_) => controller.setBank(b),
                 ),
