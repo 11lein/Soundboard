@@ -3,6 +3,10 @@
 Android-App zur **Fernsteuerung des ESP32-Soundboards über Bluetooth Classic (SPP)**.
 Spiegelt das physische Gerät: 6 Bänke, je ein 5×5-Raster mit den echten Tastenfarben.
 
+<p align="center">
+  <img src="docs/screenshot.png" alt="Soundboard Remote – Bank 1 (Tracks 101–124)" width="300">
+</p>
+
 ## Funktion
 
 - 🔵 **Verbinden** mit dem gekoppelten Gerät `das_11lein` (gekoppelte Geräte werden

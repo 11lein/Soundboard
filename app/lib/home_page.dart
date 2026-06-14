@@ -99,13 +99,16 @@ class _HomePageState extends State<HomePage> {
               const SizedBox(width: 12),
             ],
           ),
-          body: Column(
-            children: [
-              _connectionBar(connected),
-              _bankSelector(),
-              Expanded(child: _grid(connected)),
-              _controls(connected),
-            ],
+          body: SafeArea(
+            child: Column(
+              children: [
+                _connectionBar(connected),
+                _bankSelector(),
+                _grid(connected),
+                const SizedBox(height: 10),
+                _controls(connected),
+              ],
+            ),
           ),
         );
       },
@@ -177,6 +180,8 @@ class _HomePageState extends State<HomePage> {
         crossAxisCount: 5,
         mainAxisSpacing: 6,
         crossAxisSpacing: 6,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
         children: [
           for (int vr = 0; vr < 5; vr++)
             for (int col = 0; col < 5; col++) _key(vr, col, connected),
