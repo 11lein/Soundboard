@@ -1,6 +1,6 @@
 # 📱 Soundboard Remote (Flutter, Android)
 
-Android-App zur **Fernsteuerung des ESP32-Soundboards über Bluetooth Classic (SPP)**.
+Flutter-App zur **Fernsteuerung des ESP32-Soundboards über Bluetooth Classic (SPP)**.
 Spiegelt das physische Gerät: 6 Bänke, je ein 5×5-Raster mit den echten Tastenfarben.
 
 <p align="center">
@@ -31,7 +31,43 @@ Spiegelt das physische Gerät: 6 Bänke, je ein 5×5-Raster mit den echten Taste
 Berechtigung: `BLUETOOTH_CONNECT` (Android 12+) wird zur Laufzeit über
 `permission_handler` angefragt; nur gekoppelte Geräte, kein Scan/Location nötig.
 
-## Bauen & Installieren
+## App installieren
+
+### Android – APK direkt (empfohlen, kein Google Play nötig)
+
+Eine fertig gebaute APK liegt im Repo unter `app/soundboard-remote.apk`.
+
+1. APK auf das Telefon übertragen (USB-Kabel, Bluetooth-Dateiübertragung oder
+   Cloud-Dienst deiner Wahl).
+2. Auf dem Telefon: **Einstellungen → Apps → Sonderrechte → Unbekannte Quellen**
+   (auf manchen Geräten: *Unbekannte Apps installieren*) für den Datei-Manager oder
+   Browser aktivieren, mit dem du die APK öffnest.
+3. Die APK antippen → installieren.
+4. Nach der Installation einmal den Bluetooth-Namen `das_11lein` in den
+   Android-Bluetooth-Einstellungen koppeln, dann die App öffnen.
+
+> Android-Hilfe: [support.google.com – Apps aus anderen Quellen installieren](https://support.google.com/android/answer/7680439)
+
+### iPhone / iOS – nicht direkt unterstützt
+
+Bluetooth Classic (SPP/RFCOMM) wird von iOS **nicht unterstützt** – Apple erlaubt
+App-seitig nur Bluetooth Low Energy (BLE) sowie proprietäre MFi-Protokolle.
+Der ESP32 nutzt klassisches SPP, das auf iPhone grundsätzlich nicht aus Apps
+heraus erreichbar ist (weder über den App Store noch per Sideload).
+
+Optionen, falls du doch ein iOS-Gerät nutzen möchtest:
+
+- **ESP32 auf BLE umrüsten**: Die Firmware auf BLE-UART (z. B. Nordic UART Service)
+  umstellen; dann kann eine angepasste Flutter-App über `flutter_blue_plus` sprechen.
+  Aufwand: mittlerer Firmware-Umbau.
+- **Webbrowser-Steuerung**: ESP32 als WLAN-Access-Point mit einer kleinen
+  Web-Seite; dann reicht Safari auf dem iPhone. Kein Bluetooth nötig.
+
+> iOS-Referenz zu Bluetooth-Einschränkungen: [developer.apple.com – Core Bluetooth](https://developer.apple.com/documentation/corebluetooth)
+
+---
+
+## Selbst bauen & Installieren
 
 > ⚠️ **Wichtig:** Android-/Gradle-Builds scheitern an Leerzeichen/Klammern im Pfad.
 > Dieses Repo liegt unter `…/Soundboard (Kopie)/`, daher **nicht hier direkt
