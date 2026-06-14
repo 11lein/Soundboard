@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- Dark background with rounded corners -->
+  <rect width="512" height="512" rx="96" fill="#1e1f24"/>
+
+  <!-- 5x5 grid: padding 52px each side → 408px usable, 5 cells + 4 gaps of 8px
+       cell = (408 - 32) / 5 = 75.2 → round to 75, gaps = (408 - 375) / 4 = 8.25 ≈ 8
+       Start x=52, start y=52, step=83 (75+8) -->
+
+  <!-- Row 0 (top) — green  (#9ed79f) -->
+  <rect x="52"  y="52"  width="75" height="75" rx="10" fill="#9ed79f"/>
+  <rect x="135" y="52"  width="75" height="75" rx="10" fill="#9ed79f"/>
+  <rect x="218" y="52"  width="75" height="75" rx="10" fill="#9ed79f"/>
+  <rect x="301" y="52"  width="75" height="75" rx="10" fill="#9ed79f"/>
+  <!-- top-right = MODE key: dimmed, dashed border -->
+  <rect x="384" y="52"  width="76" height="75" rx="10" fill="#9ed79f" opacity="0.35"/>
+  <rect x="384" y="52"  width="76" height="75" rx="10" fill="none" stroke="#9ed79f" stroke-width="2" stroke-dasharray="6 4" opacity="0.6"/>
+  <text x="422" y="97" text-anchor="middle" font-family="Arial,sans-serif" font-size="14" font-weight="700" fill="#9ed79f" opacity="0.8" letter-spacing="0.5">MODE</text>
+
+  <!-- Row 1 — yellow (#ecd87f) -->
+  <rect x="52"  y="135" width="75" height="75" rx="10" fill="#ecd87f"/>
+  <rect x="135" y="135" width="75" height="75" rx="10" fill="#ecd87f"/>
+  <rect x="218" y="135" width="75" height="75" rx="10" fill="#ecd87f"/>
+  <rect x="301" y="135" width="75" height="75" rx="10" fill="#ecd87f"/>
+  <rect x="384" y="135" width="76" height="75" rx="10" fill="#ecd87f"/>
+
+  <!-- Row 2 — white (#d7dbe3) -->
+  <rect x="52"  y="218" width="75" height="75" rx="10" fill="#d7dbe3"/>
+  <rect x="135" y="218" width="75" height="75" rx="10" fill="#d7dbe3"/>
+  <rect x="218" y="218" width="75" height="75" rx="10" fill="#d7dbe3"/>
+  <rect x="301" y="218" width="75" height="75" rx="10" fill="#d7dbe3"/>
+  <rect x="384" y="218" width="76" height="75" rx="10" fill="#d7dbe3"/>
+
+  <!-- Row 3 — blue (#9cc2ea) -->
+  <rect x="52"  y="301" width="75" height="75" rx="10" fill="#9cc2ea"/>
+  <rect x="135" y="301" width="75" height="75" rx="10" fill="#9cc2ea"/>
+  <rect x="218" y="301" width="75" height="75" rx="10" fill="#9cc2ea"/>
+  <rect x="301" y="301" width="75" height="75" rx="10" fill="#9cc2ea"/>
+  <rect x="384" y="301" width="76" height="75" rx="10" fill="#9cc2ea"/>
+
+  <!-- Row 4 (bottom) — black (#9aa0ad), col 1 = red (#eca093) -->
+  <rect x="52"  y="384" width="75" height="76" rx="10" fill="#9aa0ad"/>
+  <rect x="135" y="384" width="75" height="76" rx="10" fill="#eca093"/>
+  <rect x="218" y="384" width="75" height="76" rx="10" fill="#9aa0ad"/>
+  <rect x="301" y="384" width="75" height="76" rx="10" fill="#9aa0ad"/>
+  <rect x="384" y="384" width="76" height="76" rx="10" fill="#9aa0ad"/>
+</svg>
