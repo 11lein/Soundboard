@@ -39,7 +39,22 @@ Soundboard-MP3s per **Drag & Drop**. Die Dateien werden für das DFPlayer-Schema
   umbenannt (4-stelliger Prefix `NNNN_`). Kollisionssicher durch zweiphasiges
   Umbenennen (z. B. bei einem Tausch).
 
-## Start (Entwicklung)
+## Starten per Doppelklick
+
+Voraussetzung: **Node.js/npm** ist installiert (https://nodejs.org). Beim ersten
+Start werden die Abhängigkeiten automatisch geholt.
+
+| Betriebssystem | Datei doppelklicken |
+|----------------|---------------------|
+| 🪟 Windows     | `start.bat` |
+| 🍎 macOS       | `start.command` |
+| 🐧 Linux       | `start.sh` |
+
+> - **macOS:** Beim ersten Mal evtl. Rechtsklick → „Öffnen" (Gatekeeper).
+> - **Linux:** Im Dateimanager ggf. „Ausführen erlauben" aktivieren bzw. beim
+>   Doppelklick „Run/Ausführen" wählen.
+
+## Start (Entwicklung / Terminal)
 
 ```bash
 cd tools/mp3-sorter
@@ -48,7 +63,8 @@ npm start
 ```
 
 > Hinweis Linux: Falls `ELECTRON_RUN_AS_NODE` in der Umgebung gesetzt ist, vorher
-> entfernen: `env -u ELECTRON_RUN_AS_NODE npm start`.
+> entfernen: `env -u ELECTRON_RUN_AS_NODE npm start` (die Doppelklick-Starter
+> erledigen das bereits selbst).
 
 ## Tests
 
