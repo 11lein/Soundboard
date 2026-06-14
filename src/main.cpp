@@ -2,6 +2,7 @@
 #include <Keypad.h>
 #include <DFPlayerMini_Fast.h>
 #include "BluetoothSerial.h"
+#include <esp_wifi.h>
 
 // --- Configuration ---
 const char *BT_NAME = "das_11lein";  // Bluetooth device name
@@ -144,6 +145,15 @@ void keypadEvent(KeypadEvent key)
 void setup()
 {
   Serial.begin(115200);
+
+  // WiFi is unused. The sketch never calls WiFi.begin(), so the radio is never
+  // brought up, but we stop+deinit the driver explicitly to guarantee it draws
+  // no power and to document the intent. These are harmless no-ops returning
+  // ESP_ERR_WIFI_NOT_INIT if WiFi was never started. (Using the ESP-IDF calls
+  // directly avoids linking the heavy Arduino <WiFi.h> library.)
+  esp_wifi_stop();
+  esp_wifi_deinit();
+
   mySerial.begin(9600, SERIAL_8N1, 22, 23);
   pinMode(BUSY_PIN, INPUT_PULLUP);
 

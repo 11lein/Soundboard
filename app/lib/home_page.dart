@@ -16,12 +16,17 @@ class _HomePageState extends State<HomePage> {
   final controller = SoundboardController();
   List<List<String>> _rows = [];
   Map<String, dynamic> _palette = {};
+  final _searchCtrl = TextEditingController();
+  String _query = '';
 
   @override
   void initState() {
     super.initState();
     _loadColors();
     controller.loadStoredList();
+    _searchCtrl.addListener(() {
+      setState(() => _query = _searchCtrl.text.trim().toLowerCase());
+    });
   }
 
   Future<void> _loadColors() async {
@@ -45,6 +50,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
+    _searchCtrl.dispose();
     controller.dispose();
     super.dispose();
   }
@@ -140,6 +146,13 @@ class _HomePageState extends State<HomePage> {
 
   Widget _listeTab(bool connected) {
     final list = controller.tracklist;
+    final filtered = _query.isEmpty
+        ? list
+        : list
+            .where((t) =>
+                t.title.toLowerCase().contains(_query) ||
+                t.n.toString().contains(_query))
+            .toList();
     return Column(
       children: [
         Padding(
@@ -168,6 +181,25 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
         ),
+        if (list.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+            child: TextField(
+              controller: _searchCtrl,
+              decoration: InputDecoration(
+                isDense: true,
+                prefixIcon: const Icon(Icons.search, size: 20),
+                hintText: 'Titel oder Nummer suchen…',
+                border: const OutlineInputBorder(),
+                suffixIcon: _query.isEmpty
+                    ? null
+                    : IconButton(
+                        icon: const Icon(Icons.clear, size: 20),
+                        onPressed: _searchCtrl.clear,
+                      ),
+              ),
+            ),
+          ),
         Expanded(
           child: list.isEmpty
               ? const Center(
@@ -181,27 +213,41 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                 )
-              : ListView.separated(
-                  itemCount: list.length,
-                  separatorBuilder: (_, _) =>
-                      const Divider(height: 1, color: Colors.white12),
-                  itemBuilder: (context, i) {
-                    final t = list[i];
-                    return ListTile(
-                      dense: true,
-                      leading: Text(
-                        t.n.toString().padLeft(4, '0'),
-                        style: const TextStyle(
-                            fontFeatures: [FontFeature.tabularFigures()],
-                            color: Colors.lightBlueAccent,
-                            fontWeight: FontWeight.bold),
-                      ),
-                      title: Text(t.title),
-                      trailing: const Icon(Icons.play_arrow),
-                      onTap: connected ? () => controller.playNumber(t.n) : null,
-                    );
-                  },
-                ),
+              : filtered.isEmpty
+                  ? const Center(
+                      child: Text('Kein Treffer',
+                          style: TextStyle(color: Colors.white60)),
+                    )
+                  : ListView.separated(
+                      itemCount: filtered.length,
+                      separatorBuilder: (_, _) =>
+                          const Divider(height: 1, color: Colors.white12),
+                      itemBuilder: (context, i) {
+                        final t = filtered[i];
+                        final bank = t.n ~/ 100;
+                        final pos = t.n % 100;
+                        return ListTile(
+                          dense: true,
+                          leading: Text(
+                            t.n.toString(),
+                            style: const TextStyle(
+                                fontFeatures: [FontFeature.tabularFigures()],
+                                color: Colors.lightBlueAccent,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16),
+                          ),
+                          title: Text(t.title),
+                          subtitle: Text(
+                            'Bank $bank · Taste ${pos.toString().padLeft(2, '0')}',
+                            style: const TextStyle(
+                                color: Colors.white54, fontSize: 11),
+                          ),
+                          trailing: const Icon(Icons.play_arrow),
+                          onTap:
+                              connected ? () => controller.playNumber(t.n) : null,
+                        );
+                      },
+                    ),
         ),
       ],
     );
