@@ -56,6 +56,8 @@ app.whenReady().then(async () => {
   ok("api.listMp3 present", r.keys.includes("listMp3"));
   ok("api.fileUrl present", r.keys.includes("fileUrl"));
   ok("api.colors present", r.keys.includes("colors"));
+  ok("api.deleteFiles present", r.keys.includes("deleteFiles"));
+  ok("api.mp3Info present", r.keys.includes("mp3Info"));
   ok("colours have 5 rows", r.colorsRows === 5);
   ok(
     "bottom row = black,red,black,black,black",
