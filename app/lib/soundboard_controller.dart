@@ -38,8 +38,32 @@ class SoundboardController extends ChangeNotifier {
   String? listImportedAt;
   static const _prefsKey = 'tracklist_json';
 
+  // Last successfully connected device, for auto-reconnect on launch.
+  static const _lastDeviceKey = 'last_device';
+
   SoundboardController() {
     _ch.setMethodCallHandler(_onNative);
+  }
+
+  /// Try to reconnect to the device used last time. Silent if none stored or
+  /// the device is not reachable (the user can still connect manually).
+  Future<void> tryAutoReconnect() async {
+    final prefs = await SharedPreferences.getInstance();
+    final stored = prefs.getString(_lastDeviceKey);
+    if (stored == null) return;
+    String name, address;
+    try {
+      final m = jsonDecode(stored) as Map<String, dynamic>;
+      name = (m['name'] ?? '').toString();
+      address = (m['address'] ?? '').toString();
+    } catch (_) {
+      return;
+    }
+    if (address.isEmpty) return;
+    await loadDevices();
+    // Only reconnect if the device is still paired.
+    if (!devices.any((d) => d.address == address)) return;
+    await connect(BtDevice(name, address));
   }
 
   // ---- Imported track list ----
@@ -107,6 +131,10 @@ class SoundboardController extends ChangeNotifier {
       await _ch.invokeMethod('connect', {'address': d.address});
       state = ConnState.connected;
       status = 'Verbunden mit ${d.name}';
+      // Remember this device for auto-reconnect next launch.
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+          _lastDeviceKey, jsonEncode({'name': d.name, 'address': d.address}));
     } on PlatformException catch (e) {
       state = ConnState.disconnected;
       status = 'Verbindung fehlgeschlagen: ${e.message}';

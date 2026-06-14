@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/services.dart' show rootBundle, HapticFeedback;
 import 'package:file_picker/file_picker.dart';
 import 'soundboard_controller.dart';
 
@@ -24,6 +24,7 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _loadColors();
     controller.loadStoredList();
+    controller.tryAutoReconnect();
     _searchCtrl.addListener(() {
       setState(() => _query = _searchCtrl.text.trim().toLowerCase());
     });
@@ -243,8 +244,12 @@ class _HomePageState extends State<HomePage> {
                                 color: Colors.white54, fontSize: 11),
                           ),
                           trailing: const Icon(Icons.play_arrow),
-                          onTap:
-                              connected ? () => controller.playNumber(t.n) : null,
+                          onTap: connected
+                              ? () {
+                                  HapticFeedback.selectionClick();
+                                  controller.playNumber(t.n);
+                                }
+                              : null,
                         );
                       },
                     ),
@@ -373,7 +378,12 @@ class _HomePageState extends State<HomePage> {
       borderRadius: BorderRadius.circular(10),
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
-        onTap: connected ? () => controller.playKey(pos) : null,
+        onTap: connected
+            ? () {
+                HapticFeedback.selectionClick();
+                controller.playKey(pos);
+              }
+            : null,
         child: Container(
           alignment: Alignment.center,
           child: Text('$track',

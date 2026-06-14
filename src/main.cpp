@@ -3,6 +3,7 @@
 #include <DFPlayerMini_Fast.h>
 #include "BluetoothSerial.h"
 #include <esp_wifi.h>
+#include <Preferences.h>
 
 // --- Configuration ---
 const char *BT_NAME = "das_11lein";  // Bluetooth device name
@@ -37,6 +38,18 @@ const int CMD_RESET = 9995;      // restart the ESP32
 
 BluetoothSerial SerialBT;
 
+// Persistent storage for the last-used volume (survives reboots).
+Preferences prefs;
+int currentVolume = START_VOLUME;        // active DFPlayer volume (0..30)
+volatile bool btClientConnected = false; // set by the SPP callback on connect
+
+// SPP event callback: flag a fresh connection so loop() can greet the client.
+void btEventCallback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param)
+{
+  if (event == ESP_SPP_SRV_OPEN_EVT)
+    btClientConnected = true;
+}
+
 const byte ROWS = 5; // five rows
 const byte COLS = 5; // five columns
 char keys[ROWS][COLS] = {
@@ -66,6 +79,17 @@ DFPlayerMini_Fast myDFPlayer;
 bool isPlaying()
 {
   return digitalRead(BUSY_PIN) == LOW;
+}
+
+// Apply a volume to the DFPlayer and persist it in NVS so it is restored on
+// the next boot. Clamped to the valid 0..MAX_VOLUME range.
+void applyVolume(int vol)
+{
+  if (vol < 0) vol = 0;
+  if (vol > MAX_VOLUME) vol = MAX_VOLUME;
+  currentVolume = vol;
+  myDFPlayer.volume(vol);
+  prefs.putInt("volume", vol);
 }
 
 void playTrack(int track)
@@ -171,6 +195,7 @@ void setup()
     delay(1000);
   }
 
+  SerialBT.register_callback(btEventCallback); // greet clients on connect
   if (!SerialBT.begin(BT_NAME))
   {
     Serial.println(F("Bluetooth init failed"));
@@ -180,7 +205,10 @@ void setup()
   keypad.setHoldTime(HOLD_TIME_MS);
 
   Serial.println(F("DFPlayer Mini online."));
-  myDFPlayer.volume(START_VOLUME); // Set volume value. From 0 to MAX_VOLUME
+
+  // Restore the last-used volume from NVS (default START_VOLUME on first boot).
+  prefs.begin("soundboard", false);
+  applyVolume(prefs.getInt("volume", START_VOLUME));
 }
 
 void loop()
@@ -191,14 +219,33 @@ void loop()
   if (modeLevel != 0 && millis() - modeSetTime > MODE_TIMEOUT_MS)
     setMode(0);
 
-  // Non-blocking BT line reader (fixed buffer, no heap fragmentation)
+  // Greet a freshly connected client with the current state so the app can
+  // show the real volume instead of guessing. Set by the SPP callback.
+  if (btClientConnected)
+  {
+    btClientConnected = false;
+    SerialBT.println("READY vol=" + String(currentVolume));
+  }
+
+  // Non-blocking BT line reader (fixed buffer, no heap fragmentation).
+  // overflow=true marks a line longer than the buffer: we keep discarding its
+  // bytes until the next '\n' so a too-long line is dropped instead of being
+  // truncated and misinterpreted as a valid (but wrong) number.
   static char btBuffer[8];
   static byte btLen = 0;
+  static bool overflow = false;
   while (SerialBT.available())
   {
     char c = SerialBT.read();
     if (c == '\n')
     {
+      if (overflow)
+      {
+        SerialBT.println("Ignored (too long)");
+        overflow = false;
+        btLen = 0;
+        continue;
+      }
       btBuffer[btLen] = '\0';
       int input = atoi(btBuffer);
       btLen = 0;
@@ -215,17 +262,17 @@ void loop()
         }
         else if (input == CMD_VOLUME_LOW)
         {
-          myDFPlayer.volume(10);
+          applyVolume(10);
           SerialBT.println("Volume 10");
         }
         else if (input == CMD_VOLUME_MID)
         {
-          myDFPlayer.volume(20);
+          applyVolume(20);
           SerialBT.println("Volume 20");
         }
         else if (input == CMD_VOLUME_HIGH)
         {
-          myDFPlayer.volume(MAX_VOLUME);
+          applyVolume(MAX_VOLUME);
           SerialBT.println("Volume 30");
         }
         else if (input == CMD_RESET)
@@ -246,9 +293,12 @@ void loop()
         }
       }
     }
-    else if (c != '\r' && btLen < sizeof(btBuffer) - 1)
+    else if (c != '\r')
     {
-      btBuffer[btLen++] = c;
+      if (btLen < sizeof(btBuffer) - 1)
+        btBuffer[btLen++] = c;
+      else
+        overflow = true; // line exceeds the buffer → discard until newline
     }
   }
 }

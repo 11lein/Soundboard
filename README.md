@@ -121,6 +121,10 @@ Zahl (mit `\n`) an das Gerät `das_11lein` senden. Die Tracknummer enthält die 
 
 > Die Befehlscodes liegen bei `9999` absteigend – weit über jeder Tracknummer, daher keine Kollision.
 
+Die zuletzt gesetzte Lautstärke wird im Flash (NVS) gespeichert und beim Booten
+wiederhergestellt. Beim Verbinden sendet der ESP einmal `READY vol=<n>`, damit die
+App den aktuellen Stand kennt. WiFi ist deaktiviert (das Gerät nutzt nur Bluetooth).
+
 
 ---
 

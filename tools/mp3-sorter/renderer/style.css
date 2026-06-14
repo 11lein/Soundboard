@@ -221,7 +221,7 @@ main.dragover {
   flex-direction: column;
   gap: 2px;
   overflow: hidden;
-  min-height: 96px;
+  min-height: 110px;
 }
 .cell.blocked {
   border-style: dashed;
@@ -240,7 +240,7 @@ main.dragover {
   display: flex;
   align-items: center;
   gap: 4px;
-  height: 15px;
+  height: 17px;
   border-radius: 3px;
   padding: 0 2px;
   cursor: grab;
@@ -258,10 +258,10 @@ main.dragover {
 .line-empty {
   cursor: default;
   border: 1px dashed #00000022;
-  height: 15px;
+  height: 17px;
 }
 .lname {
-  font-size: 11px;
+  font-size: 12.5px;
   color: #1b1b1f;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -271,7 +271,7 @@ main.dragover {
 .lname-edit {
   flex: 1;
   min-width: 0;
-  font-size: 11px;
+  font-size: 12.5px;
   border: 1px solid #1b1b1f;
   border-radius: 3px;
   padding: 0 2px;
