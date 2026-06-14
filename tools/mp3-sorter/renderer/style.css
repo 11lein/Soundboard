@@ -268,6 +268,16 @@ main.dragover {
   white-space: nowrap;
   min-width: 0;
 }
+.lname-edit {
+  flex: 1;
+  min-width: 0;
+  font-size: 11px;
+  border: 1px solid #1b1b1f;
+  border-radius: 3px;
+  padding: 0 2px;
+  background: #fff;
+  color: #1b1b1f;
+}
 .play-btn {
   background: #ffffffcc;
   color: #1b1b1f;

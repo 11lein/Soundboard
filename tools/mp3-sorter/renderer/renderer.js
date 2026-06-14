@@ -108,10 +108,15 @@ function makeLine(entry, target) {
     line.draggable = true;
     line.innerHTML =
       `<button class="play-btn" data-orig="${escapeHtml(entry.orig)}" draggable="false">▶</button>` +
-      `<span class="lname" title="${escapeHtml(entry.base)}">${escapeHtml(displayName(entry.base))}</span>`;
+      `<span class="lname" title="${escapeHtml(entry.base)} — Doppelklick zum Umbenennen">${escapeHtml(displayName(entry.base))}</span>`;
     line.querySelector(".play-btn").addEventListener("click", (e) => {
       e.stopPropagation();
       playToggle(entry.orig);
+    });
+    line.addEventListener("dblclick", (e) => {
+      if (e.target.closest && e.target.closest(".play-btn")) return;
+      e.stopPropagation();
+      startInlineRename(line, entry);
     });
     line.addEventListener("dragstart", (e) => {
       if (e.target.closest && e.target.closest(".play-btn")) {
@@ -184,6 +189,43 @@ function sortParked() {
   state.parked.sort((a, b) =>
     a.base.localeCompare(b.base, undefined, { sensitivity: "base" })
   );
+}
+
+// Quick rename of a single title: double-click a line -> inline edit field.
+function startInlineRename(line, entry) {
+  const span = line.querySelector(".lname");
+  if (!span || line.querySelector(".lname-edit")) return;
+  const input = document.createElement("input");
+  input.className = "lname-edit";
+  input.value = displayName(entry.base);
+  span.replaceWith(input);
+  line.draggable = false;
+  input.focus();
+  input.select();
+
+  let done = false;
+  const finish = (save) => {
+    if (done) return;
+    done = true;
+    const v = input.value.trim();
+    if (save && v && v !== displayName(entry.base)) {
+      entry.base = v.replace(/\.mp3$/i, "") + ".mp3";
+      if (state.parked.includes(entry)) sortParked();
+      markDirty(); // re-renders
+    } else {
+      render(); // restore unchanged
+    }
+  };
+  input.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") {
+      ev.preventDefault();
+      finish(true);
+    } else if (ev.key === "Escape") {
+      ev.preventDefault();
+      finish(false);
+    }
+  });
+  input.addEventListener("blur", () => finish(true));
 }
 
 // ---------- Rendering ----------
