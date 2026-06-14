@@ -32,6 +32,9 @@ class SoundboardController extends ChangeNotifier {
   String status = '';
   List<BtDevice> devices = [];
   int activeBank = 1; // 1..6
+  // True when the BT permission was permanently denied, so the UI can offer to
+  // open the system app settings (a re-request no longer shows the dialog).
+  bool permissionPermanentlyDenied = false;
 
   // Imported track list (number -> title), sorted by number.
   List<TrackEntry> tracklist = [];
@@ -60,6 +63,9 @@ class SoundboardController extends ChangeNotifier {
       return;
     }
     if (address.isEmpty) return;
+    // Don't pop a permission dialog on launch: only auto-reconnect if the user
+    // has already granted Bluetooth. Otherwise wait until they tap "Verbinden".
+    if (!(await Permission.bluetoothConnect.status).isGranted) return;
     await loadDevices();
     // Only reconnect if the device is still paired.
     if (!devices.any((d) => d.address == address)) return;
@@ -106,9 +112,34 @@ class SoundboardController extends ChangeNotifier {
     }
   }
 
+  /// Make sure BLUETOOTH_CONNECT is granted before any native BT call.
+  /// Android 12+ (API 31) requires it at runtime; older versions grant it at
+  /// install time, so the request resolves to "granted" immediately there.
+  /// Returns true only if the app may use Bluetooth now.
+  Future<bool> ensureBtPermission() async {
+    var st = await Permission.bluetoothConnect.status;
+    if (st.isGranted) {
+      permissionPermanentlyDenied = false;
+      return true;
+    }
+    // Not granted yet → ask (shows the system dialog unless already blocked).
+    st = await Permission.bluetoothConnect.request();
+    permissionPermanentlyDenied = st.isPermanentlyDenied;
+    if (st.isGranted) return true;
+    status = permissionPermanentlyDenied
+        ? 'Bluetooth-Berechtigung dauerhaft abgelehnt – bitte in den '
+            'App-Einstellungen erlauben.'
+        : 'Bluetooth-Berechtigung wird benötigt, um Geräte zu finden.';
+    notifyListeners();
+    return false;
+  }
+
+  /// Open the system app-settings page so the user can grant a permission that
+  /// was permanently denied.
+  Future<void> openSettings() => openAppSettings();
+
   Future<void> loadDevices() async {
-    // Android 12+ needs BLUETOOTH_CONNECT at runtime; no-op on older versions.
-    await Permission.bluetoothConnect.request();
+    if (!await ensureBtPermission()) return;
     try {
       final List list = await _ch.invokeMethod('bondedDevices');
       devices = [

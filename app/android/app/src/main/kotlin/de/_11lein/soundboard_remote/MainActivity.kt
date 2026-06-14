@@ -61,7 +61,11 @@ class MainActivity : FlutterActivity() {
                 closeSocket()
                 val adapter = BluetoothAdapter.getDefaultAdapter()
                 val device: BluetoothDevice = adapter.getRemoteDevice(address)
-                adapter.cancelDiscovery()
+                // cancelDiscovery() speeds up the connect, but on Android 12+ it
+                // needs the separate BLUETOOTH_SCAN permission. We don't scan, so
+                // we don't request it – just ignore if it's not allowed instead of
+                // letting the SecurityException abort the whole connection.
+                try { adapter.cancelDiscovery() } catch (_: SecurityException) {}
                 val s = device.createRfcommSocketToServiceRecord(sppUuid)
                 s.connect()
                 socket = s

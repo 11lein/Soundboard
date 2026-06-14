@@ -59,6 +59,41 @@ class _HomePageState extends State<HomePage> {
   Future<void> _pickDevice() async {
     await controller.loadDevices();
     if (!mounted) return;
+    // Permission was permanently denied → guide the user to the app settings.
+    if (controller.permissionPermanentlyDenied) {
+      showModalBottomSheet(
+        context: context,
+        builder: (ctx) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Bluetooth-Berechtigung fehlt',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const SizedBox(height: 8),
+                const Text(
+                    'Die App braucht die Berechtigung „Geräte in der Nähe" '
+                    '(Bluetooth), um das Soundboard zu finden und zu verbinden. '
+                    'Sie wurde dauerhaft abgelehnt – bitte in den App-Einstellungen '
+                    'unter „Berechtigungen" erlauben.'),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    controller.openSettings();
+                  },
+                  icon: const Icon(Icons.settings),
+                  label: const Text('App-Einstellungen öffnen'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      return;
+    }
     showModalBottomSheet(
       context: context,
       builder: (ctx) => SafeArea(
