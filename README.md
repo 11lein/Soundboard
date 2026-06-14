@@ -27,10 +27,8 @@ Deshalb: ein eigenständiges Soundboard mit 25 Tasten, SD-Karte und Sofortreakti
 ![Soundboard Elektronik](docu/20230720_202601.jpg)
 ![Soundboard Elektronik](docu/20230720_220237.jpg)
 
-### Tastenmatrix in Aktion
-![Tastenmatrix](docu/Schaltung.jpg)
-
-> Alle Bilder findest du im Ordner `docu/`
+> Alle Bilder findest du im Ordner `docu/`. Der aktuelle Verdrahtungsplan steht
+> weiter unten im Abschnitt [Schaltung](#-schaltung).
 
 ---
 
@@ -47,7 +45,13 @@ Deshalb: ein eigenständiges Soundboard mit 25 Tasten, SD-Karte und Sofortreakti
 
 ## 🧠 Schaltung
 
-Erstellt in [Wokwi](https://wokwi.com) (Virtueller Schaltplan: `wokwi_project.json`)
+![Verkabelung](docu/wiring_diagram.png)
+
+> Aktueller Verdrahtungsplan mit **DFPlayer Mini** (inkl. **BUSY → GPIO4**) und der
+> 5×5-Tastenmatrix. Quelle als SVG (`docu/wiring_diagram.svg`) bzw. zum Neuerzeugen
+> `docu/gen_wiring.py` (rendert das SVG aus den Pin-Belegungen in `src/main.cpp`).
+> Der frühere Wokwi-Entwurf (`docu/wokwi/`) nutzte ein SD-Kartenmodul als Platzhalter
+> und ist nicht mehr aktuell.
 
 ### 🔘 Tastenanschlüsse
 
