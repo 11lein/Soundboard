@@ -18,9 +18,24 @@
   "build": {
     "appId": "de.11lein.mp3sorter",
     "productName": "MP3 Sorter",
-    "files": ["main.js", "preload.js", "renderer/**"],
-    "mac": { "target": "dmg" },
-    "win": { "target": "nsis" },
-    "linux": { "target": "AppImage" }
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**",
+      "lib/**",
+      "node_modules/**"
+    ],
+    "mac": {
+      "target": "dmg"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  },
+  "dependencies": {
+    "music-metadata": "^11.13.0"
   }
 }

@@ -17,7 +17,11 @@ contextBridge.exposeInMainWorld("api", {
   inspectPaths: (paths) => ipcRenderer.invoke("inspect-paths", paths),
   copyInto: (folder, paths) => ipcRenderer.invoke("copy-into", folder, paths),
   exportPdf: (html) => ipcRenderer.invoke("export-pdf", html),
+  exportList: (defaultName, json) =>
+    ipcRenderer.invoke("export-list", defaultName, json),
   previewPdf: (html) => ipcRenderer.invoke("preview-pdf", html),
+  deleteFiles: (folder, names) => ipcRenderer.invoke("delete-files", folder, names),
+  mp3Info: (folder, name) => ipcRenderer.invoke("mp3-info", folder, name),
   // Resolve a dropped File object to its absolute path (Electron 32+ API).
   pathForFile: (file) => {
     try {

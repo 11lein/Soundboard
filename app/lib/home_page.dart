@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:file_picker/file_picker.dart';
 import 'soundboard_controller.dart';
 
 class HomePage extends StatefulWidget {
@@ -19,6 +21,7 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _loadColors();
+    controller.loadStoredList();
   }
 
   Future<void> _loadColors() async {
@@ -88,31 +91,142 @@ class _HomePageState extends State<HomePage> {
       listenable: controller,
       builder: (context, _) {
         final connected = controller.state == ConnState.connected;
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('Soundboard Remote'),
-            actions: [
-              Icon(
-                connected ? Icons.bluetooth_connected : Icons.bluetooth_disabled,
-                color: connected ? Colors.lightBlueAccent : Colors.white54,
-              ),
-              const SizedBox(width: 12),
-            ],
-          ),
-          body: SafeArea(
-            child: Column(
-              children: [
-                _connectionBar(connected),
-                _bankSelector(),
-                _grid(connected),
-                const SizedBox(height: 10),
-                _controls(connected),
+        return DefaultTabController(
+          length: 2,
+          child: Scaffold(
+            appBar: AppBar(
+              title: const Text('Soundboard Remote'),
+              actions: [
+                Icon(
+                  connected ? Icons.bluetooth_connected : Icons.bluetooth_disabled,
+                  color: connected ? Colors.lightBlueAccent : Colors.white54,
+                ),
+                const SizedBox(width: 12),
               ],
+              bottom: const TabBar(
+                tabs: [Tab(text: 'Tasten'), Tab(text: 'Liste')],
+              ),
+            ),
+            body: SafeArea(
+              child: Column(
+                children: [
+                  _connectionBar(connected),
+                  Expanded(
+                    child: TabBarView(
+                      children: [_tastenTab(connected), _listeTab(connected)],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );
       },
     );
+  }
+
+  Widget _tastenTab(bool connected) {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          _bankSelector(),
+          _grid(connected),
+          const SizedBox(height: 10),
+          _controls(connected),
+        ],
+      ),
+    );
+  }
+
+  Widget _listeTab(bool connected) {
+    final list = controller.tracklist;
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(8),
+          child: Row(
+            children: [
+              FilledButton.icon(
+                onPressed: _importList,
+                icon: const Icon(Icons.file_open),
+                label: const Text('Liste importieren'),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  controller.listImportedAt != null
+                      ? '${list.length} Titel · importiert'
+                      : 'Keine Liste importiert',
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+              ),
+              if (list.isNotEmpty)
+                OutlinedButton(
+                  onPressed: connected ? controller.stop : null,
+                  child: const Text('Stop'),
+                ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: list.isEmpty
+              ? const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Text(
+                      'Noch keine Liste importiert.\n\nIm Sorter „📋 Liste" exportieren, '
+                      'die JSON-Datei aufs Handy übertragen und hier importieren.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white60),
+                    ),
+                  ),
+                )
+              : ListView.separated(
+                  itemCount: list.length,
+                  separatorBuilder: (_, _) =>
+                      const Divider(height: 1, color: Colors.white12),
+                  itemBuilder: (context, i) {
+                    final t = list[i];
+                    return ListTile(
+                      dense: true,
+                      leading: Text(
+                        t.n.toString().padLeft(4, '0'),
+                        style: const TextStyle(
+                            fontFeatures: [FontFeature.tabularFigures()],
+                            color: Colors.lightBlueAccent,
+                            fontWeight: FontWeight.bold),
+                      ),
+                      title: Text(t.title),
+                      trailing: const Icon(Icons.play_arrow),
+                      onTap: connected ? () => controller.playNumber(t.n) : null,
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _importList() async {
+    final res = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['json'],
+      withData: true,
+    );
+    if (res == null || res.files.isEmpty) return;
+    final f = res.files.first;
+    String? content;
+    if (f.bytes != null) {
+      content = utf8.decode(f.bytes!);
+    } else if (f.path != null) {
+      content = await File(f.path!).readAsString();
+    }
+    if (content == null) return;
+    final n = await controller.importListFromJson(content);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(n >= 0 ? '$n Titel importiert' : 'Ungültige Listendatei'),
+    ));
   }
 
   Widget _connectionBar(bool connected) {

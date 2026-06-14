@@ -7,6 +7,7 @@ const { promisify } = require("util");
 const { pathToFileURL } = require("url");
 const naming = require("./lib/naming");
 const keyColors = require("./lib/key-colors.json");
+const mm = require("music-metadata");
 
 const execFileP = promisify(execFile);
 
@@ -157,6 +158,21 @@ ipcMain.handle("export-pdf", async (_e, html) => {
   }
 });
 
+// --- IPC: export the track list (number -> title) as JSON ---
+ipcMain.handle("export-list", async (_e, defaultName, json) => {
+  const save = await dialog.showSaveDialog({
+    defaultPath: defaultName,
+    filters: [{ name: "JSON", extensions: ["json"] }],
+  });
+  if (save.canceled || !save.filePath) return { ok: false };
+  try {
+    await fs.writeFile(save.filePath, json, "utf8");
+    return { ok: true, path: save.filePath };
+  } catch (err) {
+    return { ok: false, error: String(err && err.message ? err.message : err) };
+  }
+});
+
 // --- IPC: render the PDF to a temp file and show it in a preview window ---
 let previewWin = null;
 ipcMain.handle("preview-pdf", async (_e, html) => {
@@ -284,6 +300,35 @@ ipcMain.handle("format-drive", async (_e, drive) => {
       return { ok: true };
     }
     return { ok: false, unsupported: true };
+  } catch (err) {
+    return { ok: false, error: String(err && err.message ? err.message : err) };
+  }
+});
+
+// --- IPC: delete files from a folder ---
+ipcMain.handle("delete-files", async (_e, folder, names) => {
+  const deleted = [];
+  const failed = [];
+  for (const name of names) {
+    try {
+      await fs.unlink(path.join(folder, name));
+      deleted.push(name);
+    } catch (err) {
+      failed.push({ name, error: String(err && err.message ? err.message : err) });
+    }
+  }
+  return { ok: failed.length === 0, deleted, failed };
+});
+
+// --- IPC: read MP3 duration and bitrate ---
+ipcMain.handle("mp3-info", async (_e, folder, name) => {
+  try {
+    const meta = await mm.parseFile(path.join(folder, name), { duration: true });
+    const dur = meta.format.duration || 0;
+    const br = meta.format.bitrate ? Math.round(meta.format.bitrate / 1000) : null;
+    const mins = Math.floor(dur / 60);
+    const secs = Math.floor(dur % 60).toString().padStart(2, "0");
+    return { ok: true, duration: `${mins}:${secs}`, bitrate: br ? `${br} kbps` : null };
   } catch (err) {
     return { ok: false, error: String(err && err.message ? err.message : err) };
   }

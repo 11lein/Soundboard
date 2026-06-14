@@ -28,6 +28,9 @@ Soundboard-MP3s per **Drag & Drop**. Die Dateien werden für das DFPlayer-Schema
   Eine **2-Spalten-Vorschau** zeigt nur die betroffenen Dateien zum Bestätigen.
 - ⚡ **Quick-Rename:** **Doppelklick** auf einen Titel benennt ihn direkt inline
   um (Enter = speichern, Esc = abbrechen).
+- 📋 **Liste exportieren:** Schreibt die platzierten Titel als JSON
+  (`soundboard-liste_JJJJ-MM-TT_HH-MM-SS.json`, Nummer → Titel) – zum Import in
+  die Smartphone-App (Tab „Liste").
 - 💳 **Auf SD-Karte schieben:** Wechseldatenträger auswählen, optional **vorher
   formatieren** (mit Nachfrage; sofern das OS es unterstützt), dann die geprefixten
   Dateien in den `MP3/`-Ordner der Karte kopieren.

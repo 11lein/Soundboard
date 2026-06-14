@@ -7,17 +7,23 @@ const state = {
   folder: null,
   slots: new Array(TOTAL_SLOTS).fill(null),
   parked: [],
+  trash: [], // origs to delete on commit
   dirty: false,
 };
+
+// Cache for MP3 duration/bitrate (keyed by orig filename, loaded lazily on hover).
+const mp3InfoCache = new Map();
 
 const el = {
   gridWrap: document.getElementById("grid-wrap"),
   parkingWrap: document.getElementById("parking-wrap"),
+  trashWrap: document.getElementById("trash-wrap"),
   emptyHint: document.getElementById("empty-hint"),
   folderPath: document.getElementById("folder-path"),
   status: document.getElementById("status"),
   openBtn: document.getElementById("open-btn"),
   renameBtn: document.getElementById("rename-btn"),
+  listBtn: document.getElementById("list-btn"),
   sdBtn: document.getElementById("sd-btn"),
   previewBtn: document.getElementById("preview-btn"),
   pdfBtn: document.getElementById("pdf-btn"),
@@ -94,6 +100,47 @@ function updatePlayButtons() {
   });
 }
 
+// ---------- MP3 info tooltip ----------
+const tooltip = (() => {
+  const div = document.createElement("div");
+  div.className = "mp3-tooltip hidden";
+  document.body.appendChild(div);
+  let hideTimer = null;
+  const move = (x, y) => {
+    div.style.left = x + 14 + "px";
+    div.style.top = y + 4 + "px";
+  };
+  return {
+    show(text, x, y) {
+      clearTimeout(hideTimer);
+      div.textContent = text;
+      move(x, y);
+      div.classList.remove("hidden");
+    },
+    move,
+    hide() {
+      hideTimer = setTimeout(() => div.classList.add("hidden"), 80);
+    },
+  };
+})();
+
+async function attachMp3Tooltip(line, orig) {
+  line.addEventListener("mouseenter", async (e) => {
+    if (!state.folder) return;
+    let info = mp3InfoCache.get(orig);
+    if (!info) {
+      info = await api.mp3Info(state.folder, orig);
+      mp3InfoCache.set(orig, info);
+    }
+    if (info && info.ok) {
+      const parts = [info.duration, info.bitrate].filter(Boolean);
+      tooltip.show(parts.join(" · "), e.clientX, e.clientY);
+    }
+  });
+  line.addEventListener("mousemove", (e) => tooltip.move(e.clientX, e.clientY));
+  line.addEventListener("mouseleave", () => tooltip.hide());
+}
+
 // ---------- Drag & drop ----------
 let drag = null; // { kind: 'slot'|'parked', index }
 
@@ -118,6 +165,7 @@ function makeLine(entry, target) {
       e.stopPropagation();
       startInlineRename(line, entry);
     });
+    attachMp3Tooltip(line, entry.orig);
     line.addEventListener("dragstart", (e) => {
       if (e.target.closest && e.target.closest(".play-btn")) {
         e.preventDefault();
@@ -182,6 +230,21 @@ function dropOnParking() {
   state.slots[drag.index] = null; // prefix removed (no slot anymore)
   state.parked.push(entry);
   sortParked();
+  markDirty();
+}
+
+function dropOnTrash() {
+  if (!drag) return;
+  let entry;
+  if (drag.kind === "slot") {
+    entry = state.slots[drag.index];
+    if (!entry) return;
+    state.slots[drag.index] = null;
+  } else {
+    entry = state.parked.splice(drag.index, 1)[0];
+    if (!entry) return;
+  }
+  if (!state.trash.includes(entry.orig)) state.trash.push(entry.orig);
   markDirty();
 }
 
@@ -303,6 +366,54 @@ function render() {
     });
   }
 
+  // --- trash zone: always shown when files are loaded ---
+  el.trashWrap.innerHTML = "";
+  if (has) {
+    const zone = document.createElement("div");
+    zone.className = "trash-zone" + (state.trash.length ? " trash-has-items" : "");
+    const label = state.trash.length
+      ? `🗑️ Papierkorb (${state.trash.length}) — wird beim Final-Speichern gelöscht`
+      : "🗑️ Papierkorb — Dateien hierher ziehen zum Löschen";
+    zone.innerHTML = `<span class="trash-label">${escapeHtml(label)}</span>`;
+    if (state.trash.length) {
+      const list = document.createElement("div");
+      list.className = "trash-list";
+      for (const orig of state.trash) {
+        const row = document.createElement("div");
+        row.className = "trash-item";
+        const name = document.createElement("span");
+        name.textContent = naming.stripPrefix(orig).replace(/\.mp3$/i, "");
+        const restore = document.createElement("button");
+        restore.className = "trash-restore";
+        restore.title = "Wiederherstellen";
+        restore.textContent = "↩";
+        restore.addEventListener("click", () => {
+          state.trash = state.trash.filter((o) => o !== orig);
+          const entry = { orig, base: naming.stripPrefix(orig) };
+          state.parked.push(entry);
+          sortParked();
+          markDirty();
+        });
+        row.append(name, restore);
+        list.appendChild(row);
+      }
+      zone.appendChild(list);
+    }
+    zone.addEventListener("dragover", (e) => {
+      if (!drag) return;
+      e.preventDefault();
+      zone.classList.add("drop-target");
+    });
+    zone.addEventListener("dragleave", () => zone.classList.remove("drop-target"));
+    zone.addEventListener("drop", (e) => {
+      if (!drag) return;
+      e.preventDefault();
+      zone.classList.remove("drop-target");
+      dropOnTrash();
+    });
+    el.trashWrap.appendChild(zone);
+  }
+
   updatePlayButtons();
   updateToolbar();
 }
@@ -326,14 +437,15 @@ function updateToolbar() {
   const renames = renamePlan().length;
   el.status.textContent = n
     ? `${n} Dateien · ${state.slots.filter(Boolean).length} platziert · ${state.parked.length} geparkt${
-        state.dirty ? " · ungespeichert" : ""
-      }`
+        state.trash.length ? ` · ${state.trash.length} im Papierkorb` : ""
+      }${state.dirty ? " · ungespeichert" : ""}`
     : "";
   el.saveDraftBtn.disabled = !state.folder || n === 0;
-  el.commitBtn.disabled = !state.folder || renames === 0;
+  el.commitBtn.disabled = !state.folder || (renames === 0 && state.trash.length === 0);
   el.previewBtn.disabled = n === 0;
   el.pdfBtn.disabled = n === 0;
   el.renameBtn.disabled = n === 0;
+  el.listBtn.disabled = state.slots.filter(Boolean).length === 0;
   el.sdBtn.disabled = !state.folder || state.slots.filter(Boolean).length === 0;
 }
 
@@ -380,6 +492,8 @@ function buildModel(files, draft) {
 async function loadFolder(folder) {
   stopPlayer();
   state.folder = folder;
+  state.trash = [];
+  mp3InfoCache.clear();
   el.folderPath.textContent = folder;
   const files = await api.listMp3(folder);
   const draft = await api.loadDraft(folder);
@@ -414,19 +528,37 @@ el.saveDraftBtn.addEventListener("click", async () => {
 el.commitBtn.addEventListener("click", async () => {
   if (!state.folder) return;
   const plan = renamePlan();
-  if (!plan.length) return;
-  if (!confirm(`${plan.length} Datei(en) werden auf der Festplatte umbenannt. Fortfahren?`)) return;
+  const trashCount = state.trash.length;
+  if (!plan.length && !trashCount) return;
+  let msg = "";
+  if (plan.length) msg += `${plan.length} Datei(en) umbenennen`;
+  if (trashCount) msg += (msg ? " und " : "") + `${trashCount} Datei(en) unwiderruflich löschen`;
+  if (!confirm(msg + ". Fortfahren?")) return;
   stopPlayer();
-  const res = await api.applyRenames(state.folder, plan.map((p) => ({ from: p.from, to: p.to })));
-  if (!res.ok) {
-    alert("Fehler beim Umbenennen: " + res.error);
-    return;
+  // Delete trash files first.
+  if (trashCount) {
+    const dr = await api.deleteFiles(state.folder, state.trash);
+    for (const orig of dr.deleted) mp3InfoCache.delete(orig);
+    if (dr.failed.length) {
+      alert("Löschen teilweise fehlgeschlagen:\n" + dr.failed.map((f) => f.name + ": " + f.error).join("\n"));
+    }
+    state.trash = [];
   }
-  for (const p of plan) p.entry.orig = p.to; // model now matches disk
+  // Then apply renames.
+  if (plan.length) {
+    const res = await api.applyRenames(state.folder, plan.map((p) => ({ from: p.from, to: p.to })));
+    if (!res.ok) {
+      alert("Fehler beim Umbenennen: " + res.error);
+      return;
+    }
+    for (const p of plan) p.entry.orig = p.to;
+    el.status.textContent = `✅ ${res.renamed} Dateien umbenannt${trashCount ? `, ${trashCount} gelöscht` : ""}`;
+  } else {
+    el.status.textContent = `✅ ${trashCount} Dateien gelöscht`;
+  }
   state.dirty = false;
   await api.saveDraft(state.folder, draftFromState());
   render();
-  el.status.textContent = `✅ ${res.renamed} Dateien umbenannt`;
 });
 
 el.previewBtn.addEventListener("click", async () => {
@@ -443,6 +575,34 @@ el.pdfBtn.addEventListener("click", async () => {
   const res = await api.exportPdf(buildPrintHtml());
   if (res && res.ok) el.status.textContent = "PDF gespeichert: " + res.path;
   else if (res && res.error) alert("PDF-Fehler: " + res.error);
+  else el.status.textContent = "";
+});
+
+// ---------- Track list export (number -> title) ----------
+function buildTrackListJson() {
+  const tracks = [];
+  state.slots.forEach((entry, i) => {
+    if (entry) tracks.push({ n: prefixForSlot(i + 1), title: displayName(entry.base) });
+  });
+  tracks.sort((a, b) => a.n - b.n);
+  return JSON.stringify(
+    { exported: new Date().toISOString(), count: tracks.length, tracks },
+    null,
+    2
+  );
+}
+function listFileName() {
+  const d = new Date();
+  const p = (x) => String(x).padStart(2, "0");
+  const ts = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}_${p(d.getHours())}-${p(d.getMinutes())}-${p(d.getSeconds())}`;
+  return `soundboard-liste_${ts}.json`;
+}
+el.listBtn.addEventListener("click", async () => {
+  if (!state.slots.filter(Boolean).length) return;
+  el.status.textContent = "Exportiere Liste…";
+  const res = await api.exportList(listFileName(), buildTrackListJson());
+  if (res && res.ok) el.status.textContent = "Liste gespeichert: " + res.path;
+  else if (res && res.error) alert("Listen-Fehler: " + res.error);
   else el.status.textContent = "";
 });
 
@@ -693,4 +853,4 @@ el.dropZone.addEventListener("drop", async (e) => {
 });
 
 // Test hook (used by the headless capture/smoke scripts; harmless in normal use).
-window.__sbTest = { loadFolder, get state() { return state; } };
+window.__sbTest = { loadFolder, buildTrackListJson, get state() { return state; } };
