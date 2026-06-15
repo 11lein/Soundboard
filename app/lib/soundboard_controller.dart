@@ -61,6 +61,12 @@ class SoundboardController extends ChangeNotifier {
   bool _attempting = false; // a connect attempt is in flight (guards overlap)
   DateTime _lastAttempt = DateTime.fromMillisecondsSinceEpoch(0);
   final _rng = Random();
+
+  // Visual "now playing" feedback: the last triggered track, auto-cleared after
+  // 3 s (the ESP reports no real length, so we cap the animation).
+  int? playingTrack;
+  bool playingFromRandom = false;
+  Timer? _playTimer;
   // Name of the last device, for the reconnect button label (loaded from prefs).
   String? lastDeviceName;
 
@@ -72,7 +78,27 @@ class SoundboardController extends ChangeNotifier {
   @override
   void dispose() {
     _monitor?.cancel();
+    _playTimer?.cancel();
     super.dispose();
+  }
+
+  void _markPlaying(int n, {bool fromRandom = false}) {
+    playingTrack = n;
+    playingFromRandom = fromRandom;
+    notifyListeners();
+    _playTimer?.cancel();
+    _playTimer = Timer(const Duration(seconds: 3), () {
+      playingTrack = null;
+      playingFromRandom = false;
+      notifyListeners();
+    });
+  }
+
+  void _clearPlaying() {
+    _playTimer?.cancel();
+    playingTrack = null;
+    playingFromRandom = false;
+    notifyListeners();
   }
 
   void _startMonitor() {
@@ -356,18 +382,30 @@ class SoundboardController extends ChangeNotifier {
   /// Adjust the volume by a relative percentage (e.g. +5 / -5).
   Future<void> volumeStep(int delta) => setVolumePct(volumePct + delta);
 
-  Future<void> playKey(int pos) => _send(activeBank * 100 + pos); // pos 1..24
-  Future<void> playNumber(int n) => _send(n); // absolute track 101..624
+  Future<void> playKey(int pos) {
+    final n = activeBank * 100 + pos; // pos 1..24
+    _markPlaying(n);
+    return _send(n);
+  }
+
+  Future<void> playNumber(int n) {
+    _markPlaying(n);
+    return _send(n); // absolute track 101..624
+  }
 
   /// Play a random tone. Prefers the imported track list (real, named tracks);
   /// otherwise picks a random position in the active bank.
   Future<void> playRandom() {
-    if (tracklist.isNotEmpty) {
-      return _send(tracklist[_rng.nextInt(tracklist.length)].n);
-    }
-    return _send(activeBank * 100 + (1 + _rng.nextInt(24)));
+    final n = tracklist.isNotEmpty
+        ? tracklist[_rng.nextInt(tracklist.length)].n
+        : activeBank * 100 + (1 + _rng.nextInt(24));
+    _markPlaying(n, fromRandom: true);
+    return _send(n);
   }
 
-  Future<void> stop() => _send(9999);
+  Future<void> stop() {
+    _clearPlaying();
+    return _send(9999);
+  }
   Future<void> reset() => _send(9995);
 }

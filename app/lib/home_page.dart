@@ -282,29 +282,39 @@ class _HomePageState extends State<HomePage> {
                         final t = filtered[i];
                         final bank = t.n ~/ 100;
                         final pos = t.n % 100;
-                        return ListTile(
-                          dense: true,
-                          leading: Text(
-                            t.n.toString(),
-                            style: const TextStyle(
-                                fontFeatures: [FontFeature.tabularFigures()],
-                                color: Colors.lightBlueAccent,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16),
+                        final playing = controller.playingTrack == t.n;
+                        return _PlayPulse(
+                          active: playing,
+                          radius: BorderRadius.circular(6),
+                          child: ListTile(
+                            dense: true,
+                            tileColor:
+                                playing ? Colors.orangeAccent.withValues(alpha: 0.12) : null,
+                            leading: Text(
+                              t.n.toString(),
+                              style: const TextStyle(
+                                  fontFeatures: [FontFeature.tabularFigures()],
+                                  color: Colors.lightBlueAccent,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16),
+                            ),
+                            title: Text(t.title),
+                            subtitle: Text(
+                              'Bank $bank · Taste ${pos.toString().padLeft(2, '0')}',
+                              style: const TextStyle(
+                                  color: Colors.white54, fontSize: 11),
+                            ),
+                            trailing: Icon(
+                              playing ? Icons.graphic_eq : Icons.play_arrow,
+                              color: playing ? Colors.orangeAccent : null,
+                            ),
+                            onTap: connected
+                                ? () {
+                                    Haptics.medium();
+                                    controller.playNumber(t.n);
+                                  }
+                                : null,
                           ),
-                          title: Text(t.title),
-                          subtitle: Text(
-                            'Bank $bank · Taste ${pos.toString().padLeft(2, '0')}',
-                            style: const TextStyle(
-                                color: Colors.white54, fontSize: 11),
-                          ),
-                          trailing: const Icon(Icons.play_arrow),
-                          onTap: connected
-                              ? () {
-                                  Haptics.medium();
-                                  controller.playNumber(t.n);
-                                }
-                              : null,
                         );
                       },
                     ),
@@ -499,36 +509,41 @@ class _HomePageState extends State<HomePage> {
     if (posIndex == 24) {
       // The hardware Mode key has no app function – use it for "play a random
       // tone" instead.
-      return Material(
-        color: bg.withValues(alpha: 0.55),
-        borderRadius: BorderRadius.circular(10),
-        child: InkWell(
+      final playing = controller.playingFromRandom && controller.playingTrack != null;
+      return _PlayPulse(
+        active: playing,
+        radius: BorderRadius.circular(10),
+        child: Material(
+          color: bg.withValues(alpha: 0.55),
           borderRadius: BorderRadius.circular(10),
-          onTap: connected
-              ? () {
-                  Haptics.medium();
-                  controller.playRandom();
-                }
-              : null,
-          child: Container(
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.white24),
-            ),
-            padding: const EdgeInsets.all(2),
-            child: const FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('🎲', style: TextStyle(fontSize: 18)),
-                  Text('Zufall',
-                      style: TextStyle(
-                          fontSize: 9,
-                          color: Colors.black54,
-                          fontWeight: FontWeight.bold)),
-                ],
+          child: InkWell(
+            borderRadius: BorderRadius.circular(10),
+            onTap: connected
+                ? () {
+                    Haptics.medium();
+                    controller.playRandom();
+                  }
+                : null,
+            child: Container(
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.white24),
+              ),
+              padding: const EdgeInsets.all(2),
+              child: const FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('🎲', style: TextStyle(fontSize: 18)),
+                    Text('Zufall',
+                        style: TextStyle(
+                            fontSize: 9,
+                            color: Colors.black54,
+                            fontWeight: FontWeight.bold)),
+                  ],
+                ),
               ),
             ),
           ),
@@ -537,25 +552,30 @@ class _HomePageState extends State<HomePage> {
     }
     final pos = posIndex + 1; // 1..24
     final track = controller.activeBank * 100 + pos;
-    return Material(
-      color: bg,
-      borderRadius: BorderRadius.circular(10),
-      child: InkWell(
+    final playing = controller.playingTrack == track;
+    return _PlayPulse(
+      active: playing,
+      radius: BorderRadius.circular(10),
+      child: Material(
+        color: bg,
         borderRadius: BorderRadius.circular(10),
-        onTap: connected
-            ? () {
-                Haptics.medium();
-                controller.playKey(pos);
-              }
-            : null,
-        child: Container(
-          alignment: Alignment.center,
-          padding: const EdgeInsets.all(4),
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text('$track',
-                style: const TextStyle(
-                    color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 16)),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: connected
+              ? () {
+                  Haptics.medium();
+                  controller.playKey(pos);
+                }
+              : null,
+          child: Container(
+            alignment: Alignment.center,
+            padding: const EdgeInsets.all(4),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text('$track',
+                  style: const TextStyle(
+                      color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 16)),
+            ),
           ),
         ),
       ),
@@ -637,5 +657,87 @@ class _HomePageState extends State<HomePage> {
       ),
     );
     if (ok == true) controller.reset();
+  }
+}
+
+/// Overlays a pulsing "now playing" glow on its [child] while [active] is true.
+/// The animation only runs while active (no idle controllers for every tile).
+class _PlayPulse extends StatefulWidget {
+  final bool active;
+  final BorderRadius radius;
+  final Widget child;
+  const _PlayPulse({
+    required this.active,
+    required this.radius,
+    required this.child,
+  });
+
+  @override
+  State<_PlayPulse> createState() => _PlayPulseState();
+}
+
+class _PlayPulseState extends State<_PlayPulse>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 600));
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.active) _c.repeat(reverse: true);
+  }
+
+  @override
+  void didUpdateWidget(_PlayPulse old) {
+    super.didUpdateWidget(old);
+    if (widget.active && !_c.isAnimating) {
+      _c.repeat(reverse: true);
+    } else if (!widget.active && _c.isAnimating) {
+      _c.stop();
+      _c.value = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        widget.child,
+        if (widget.active)
+          Positioned.fill(
+            child: IgnorePointer(
+              child: AnimatedBuilder(
+                animation: _c,
+                builder: (_, _) {
+                  final t = Curves.easeInOut.transform(_c.value);
+                  return Container(
+                    decoration: BoxDecoration(
+                      borderRadius: widget.radius,
+                      border: Border.all(
+                        color: Color.lerp(Colors.orangeAccent,
+                            Colors.deepOrange, t)!,
+                        width: 2 + 2 * t,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.orangeAccent.withValues(alpha: 0.5 * t),
+                          blurRadius: 10 * t,
+                          spreadRadius: 1.5 * t,
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+      ],
+    );
   }
 }
