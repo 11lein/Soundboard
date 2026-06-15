@@ -146,23 +146,17 @@ void keypadEvent(KeypadEvent key)
   // --- Sound keys A..X ---
   // Play on PRESS for minimal latency: a tap immediately plays bank A of the
   // current group. If the key is then held past HOLD_TIME_MS, switch to bank B.
+  // (No same-key stop toggle here: at press time we cannot tell a "stop" from a
+  // "hold for bank B", and it relied on the unreliable BUSY pin anyway. Stop is
+  // done from the app; pressing the same key again simply restarts the sound.)
   const int pos = key - 'A' + 1; // 1..24
   switch (state)
   {
   case PRESSED:
-  {
-    if (isPlaying() && lastKey == key)
-    { // same key pressed again while it plays → stop (toggle)
-      myDFPlayer.stop();
-      lastKey = 0;
-      hold = false;
-    }
-    else
-    { // default tap → bank A of the current group, right away
-      hold = false;
-      lastKey = key;
-      playTrack((modeLevel * 2 + 1) * 100 + pos); // bank A
-    }
+  { // default tap → bank A of the current group, right away
+    hold = false;
+    lastKey = key;
+    playTrack((modeLevel * 2 + 1) * 100 + pos); // bank A
     break;
   }
 

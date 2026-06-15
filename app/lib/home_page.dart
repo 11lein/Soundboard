@@ -871,7 +871,10 @@ class _HomePageState extends State<HomePage> {
                       style: title == null
                           ? const TextStyle(color: Colors.white38)
                           : null),
-                  subtitle: Text('Bank $b',
+                  subtitle: Text(
+                      title == null
+                          ? 'Bank $b'
+                          : 'Bank $b · lang drücken zum Bearbeiten',
                       style: const TextStyle(fontSize: 11, color: Colors.white54)),
                   trailing: const Icon(Icons.play_arrow),
                   onTap: connected
@@ -881,6 +884,13 @@ class _HomePageState extends State<HomePage> {
                           Navigator.pop(ctx);
                         }
                       : null,
+                  onLongPress: title == null
+                      ? null
+                      : () {
+                          Haptics.light();
+                          Navigator.pop(ctx);
+                          _editEntry(TrackEntry(n, title));
+                        },
                 );
               }),
             ],
