@@ -341,6 +341,39 @@ class _HomePageState extends State<HomePage> {
 
   Widget _connectionBar(bool connected) {
     final hasLast = controller.lastDeviceName != null;
+    final connecting = controller.state == ConnState.connecting;
+
+    // One primary button reflecting the state (no spinner): "Verbunden" when
+    // connected, "Reconnect" when a last device is known, and disabled/greyed
+    // while a connection attempt is running (neither action available yet).
+    late final Widget primary;
+    if (connecting) {
+      primary = FilledButton.icon(
+        onPressed: null, // greyed out
+        icon: const Icon(Icons.bluetooth),
+        label: const Text('Verbinde…'),
+      );
+    } else if (connected) {
+      primary = FilledButton.icon(
+        onPressed: controller.disconnect,
+        icon: const Icon(Icons.bluetooth_connected),
+        label: const Text('Verbunden'),
+      );
+    } else if (hasLast) {
+      primary = FilledButton.icon(
+        onPressed: () => controller.reconnectLast(),
+        icon: const Icon(Icons.bluetooth_searching),
+        label: Text('Reconnect'
+            '${controller.lastDeviceName!.isNotEmpty ? ' (${controller.lastDeviceName})' : ''}'),
+      );
+    } else {
+      primary = FilledButton.icon(
+        onPressed: _pickDevice,
+        icon: const Icon(Icons.bluetooth_searching),
+        label: const Text('Verbinden'),
+      );
+    }
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -352,31 +385,15 @@ class _HomePageState extends State<HomePage> {
                 ? (connected ? 'Verbunden' : 'Nicht verbunden')
                 : controller.status),
           ),
-          if (controller.state == ConnState.connecting)
-            const SizedBox(
-                width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-          else if (connected)
-            TextButton.icon(
-                onPressed: controller.disconnect,
-                icon: const Icon(Icons.link_off),
-                label: const Text('Trennen'))
-          else ...[
-            // Primary action: reconnect to the last device.
-            FilledButton.icon(
-              onPressed: hasLast ? () => controller.reconnectLast() : _pickDevice,
-              icon: const Icon(Icons.bluetooth_searching),
-              label: Text(hasLast
-                  ? 'Reconnect${controller.lastDeviceName!.isNotEmpty ? ' (${controller.lastDeviceName})' : ''}'
-                  : 'Verbinden'),
+          primary,
+          // Switch to another device (opens the picker). Available when
+          // connected or when a last device exists; hidden while connecting.
+          if (!connecting && (connected || hasLast))
+            IconButton(
+              tooltip: 'Anderes Gerät wählen',
+              icon: const Icon(Icons.close),
+              onPressed: _pickDevice,
             ),
-            // Only when a last device exists: an extra button to pick another one.
-            if (hasLast)
-              IconButton(
-                tooltip: 'Anderes Gerät wählen',
-                icon: const Icon(Icons.close),
-                onPressed: _pickDevice,
-              ),
-          ],
         ],
       ),
     );
