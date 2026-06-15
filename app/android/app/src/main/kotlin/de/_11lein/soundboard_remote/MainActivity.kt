@@ -83,32 +83,17 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    // Continuously read from the socket. Incoming text is split into lines and
-    // forwarded to Dart via the "data" method (e.g. "PLAY 312", "IDLE"). A
-    // returned -1 or an IOException means the remote (ESP32) is gone, so we
-    // close and tell Dart immediately – the connection icon then reacts within
-    // a fraction of a second instead of waiting for the next failed write.
+    // Continuously read from the socket so a dropped link is detected promptly
+    // (read() == -1 / IOException → the ESP32 is gone). Incoming bytes are
+    // otherwise ignored. This makes the connection icon react within a fraction
+    // of a second instead of waiting for the next failed write.
     private fun startReader(s: BluetoothSocket) {
         thread {
             val ins: InputStream = try { s.inputStream } catch (_: Exception) { return@thread }
-            val buf = ByteArray(256)
-            val line = StringBuilder()
+            val buf = ByteArray(64)
             while (true) {
                 val n = try { ins.read(buf) } catch (_: Exception) { -1 }
                 if (n < 0) break
-                for (i in 0 until n) {
-                    val ch = buf[i].toInt().toChar()
-                    if (ch == '\n') {
-                        val msg = line.toString().trim()
-                        line.setLength(0)
-                        if (msg.isNotEmpty() && socket === s) {
-                            runOnUiThread { channel?.invokeMethod("data", msg) }
-                        }
-                    } else if (ch != '\r') {
-                        line.append(ch)
-                        if (line.length > 256) line.setLength(0) // guard runaway
-                    }
-                }
             }
             // Only report if this is still the active socket (not a stale reader).
             if (socket === s) {

@@ -82,29 +82,18 @@ class SoundboardController extends ChangeNotifier {
     super.dispose();
   }
 
-  // Show "now playing" for a fixed window. The ESP confirms the real start via
-  // "PLAY <n>" (also for physical keypad presses), but the DFPlayer BUSY pin is
-  // too unreliable to detect the end, so we auto-clear after a few seconds.
-  static const _playWindow = Duration(seconds: 4);
-  void _showPlaying(int n, {bool? fromRandom}) {
-    errorMessage = null;
-    if (fromRandom != null) {
-      playingFromRandom = fromRandom;
-    } else if (n != playingTrack) {
-      playingFromRandom = false; // a new/external track (e.g. physical button)
-    }
+  void _markPlaying(int n, {bool fromRandom = false}) {
+    errorMessage = null; // a successful action clears any stale error
     playingTrack = n;
+    playingFromRandom = fromRandom;
     notifyListeners();
     _playTimer?.cancel();
-    _playTimer = Timer(_playWindow, () {
+    _playTimer = Timer(const Duration(seconds: 3), () {
       playingTrack = null;
       playingFromRandom = false;
       notifyListeners();
     });
   }
-
-  void _markPlaying(int n, {bool fromRandom = false}) =>
-      _showPlaying(n, fromRandom: fromRandom);
 
   void _clearPlaying() {
     _playTimer?.cancel();
@@ -286,23 +275,7 @@ class SoundboardController extends ChangeNotifier {
       state = ConnState.disconnected;
       status = 'Verbindung getrennt';
       notifyListeners();
-    } else if (call.method == 'data') {
-      _onEspLine((call.arguments ?? '').toString());
     }
-  }
-
-  // Lines pushed back by the ESP: "PLAY <n>" when a track starts (keypad OR
-  // Bluetooth), "IDLE" when playback ends. This drives the *real* now-playing
-  // indicator, including sounds triggered physically on the box.
-  void _onEspLine(String line) {
-    debugPrint('ESP> $line'); // visible via `adb logcat | grep ESP>`
-    if (line.startsWith('PLAY ')) {
-      final n = int.tryParse(line.substring(5).trim());
-      if (n != null) _showPlaying(n); // confirmed start (app or keypad)
-    } else if (line == 'Stopped') {
-      _clearPlaying();
-    }
-    // "IDLE" from the BUSY pin is ignored on purpose (unreliable, see firmware).
   }
 
   /// Make sure BLUETOOTH_CONNECT is granted before any native BT call.

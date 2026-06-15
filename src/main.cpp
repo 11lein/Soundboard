@@ -100,9 +100,6 @@ void playTrack(int track)
   Serial.print(F("Track: "));
   Serial.println(track);
   myDFPlayer.playFromMP3Folder(track);
-  // Notify any connected app which track is now playing – works for both
-  // keypad and Bluetooth triggers, so the app reflects the real state.
-  SerialBT.println("PLAY " + String(track));
 }
 
 void setMode(byte level)
@@ -232,12 +229,6 @@ void loop()
     btClientConnected = false;
     SerialBT.println("READY vol=" + String(currentVolumePct));
   }
-
-  // Note: the DFPlayer BUSY pin proved unreliable as a "still playing" signal
-  // (it can read idle ~1 s into a long track and flicker), so we do NOT derive
-  // an end-of-playback message from it. The app shows "now playing" for a fixed
-  // window after each "PLAY <n>" instead. BUSY is still used for the same-key
-  // stop toggle below, where a momentary reading is good enough.
 
   // Non-blocking BT line reader (fixed buffer, no heap fragmentation).
   // overflow=true marks a line longer than the buffer: we keep discarding its
