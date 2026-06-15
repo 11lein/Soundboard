@@ -299,6 +299,24 @@ class SoundboardController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Disconnect (if needed) and forget the stored device, so the watchdog will
+  /// not auto-reconnect to it until the user picks a device again.
+  Future<void> forgetDevice() async {
+    _userDisconnected = true;
+    if (state != ConnState.disconnected) {
+      try {
+        await _ch.invokeMethod('disconnect');
+      } on PlatformException {/* ignore */}
+    }
+    state = ConnState.disconnected;
+    lastDeviceName = null;
+    deviceName = null;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_lastDeviceKey);
+    status = 'Gerät vergessen';
+    notifyListeners();
+  }
+
   Future<void> _send(int code) async {
     if (state != ConnState.connected) {
       status = 'Nicht verbunden';

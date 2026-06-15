@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'haptics.dart';
+import 'settings_page.dart';
 import 'package:file_picker/file_picker.dart';
 import 'soundboard_controller.dart';
 
@@ -169,31 +170,16 @@ class _HomePageState extends State<HomePage> {
             appBar: AppBar(
               title: const Text('Soundboard Remote'),
               actions: [
-                if (connected)
-                  IconButton(
-                    tooltip: 'ESP32 neu starten',
-                    icon: const Icon(Icons.restart_alt),
-                    onPressed: _confirmReset,
-                  ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: _connIndicator(),
-                ),
+                _btIcon(connected),
+                _overflowMenu(connected),
               ],
               bottom: const TabBar(
                 tabs: [Tab(text: 'Tasten'), Tab(text: 'Liste')],
               ),
             ),
             body: SafeArea(
-              child: Column(
-                children: [
-                  _connectionBar(connected),
-                  Expanded(
-                    child: TabBarView(
-                      children: [_tastenTab(connected), _listeTab(connected)],
-                    ),
-                  ),
-                ],
+              child: TabBarView(
+                children: [_tastenTab(connected), _listeTab(connected)],
               ),
             ),
           ),
@@ -349,77 +335,84 @@ class _HomePageState extends State<HomePage> {
     ));
   }
 
-  // Live connection indicator in the AppBar (refreshed by the controller's
-  // 1.2 s watchdog, so it tracks the real link state even when the ESP is off).
-  Widget _connIndicator() {
-    switch (controller.state) {
-      case ConnState.connecting:
-        return const SizedBox(
+  // Bluetooth state icon in the AppBar (refreshed by the controller's watchdog).
+  // Connected → blue indicator. Disconnected → tap reconnects to the last device
+  // (or opens the picker if none). Connecting → small spinner.
+  Widget _btIcon(bool connected) {
+    if (controller.state == ConnState.connecting) {
+      return const Padding(
+        padding: EdgeInsets.all(14),
+        child: SizedBox(
             width: 18,
             height: 18,
             child: CircularProgressIndicator(
-                strokeWidth: 2, color: Colors.amberAccent));
-      case ConnState.connected:
-        return const Icon(Icons.bluetooth_connected,
-            color: Colors.lightBlueAccent);
-      case ConnState.disconnected:
-        return const Icon(Icons.bluetooth_disabled, color: Colors.white54);
+                strokeWidth: 2, color: Colors.amberAccent)),
+      );
     }
+    if (connected) {
+      return IconButton(
+        tooltip: controller.lastDeviceName != null
+            ? 'Verbunden (${controller.lastDeviceName})'
+            : 'Verbunden',
+        icon: const Icon(Icons.bluetooth_connected, color: Colors.lightBlueAccent),
+        onPressed: () {}, // pure indicator (keeps full colour, no grey)
+      );
+    }
+    final hasLast = controller.lastDeviceName != null;
+    return IconButton(
+      tooltip: hasLast ? 'Verbinden (${controller.lastDeviceName})' : 'Verbinden',
+      icon: const Icon(Icons.bluetooth_disabled, color: Colors.white54),
+      onPressed: () => hasLast ? controller.reconnectLast() : _pickDevice(),
+    );
   }
 
-  Widget _connectionBar(bool connected) {
+  Widget _overflowMenu(bool connected) {
     final hasLast = controller.lastDeviceName != null;
-    final connecting = controller.state == ConnState.connecting;
-
-    // One primary button reflecting the state (no spinner): "Verbunden" when
-    // connected, "Reconnect" when a last device is known, and disabled/greyed
-    // while a connection attempt is running (neither action available yet).
-    late final Widget primary;
-    if (connecting) {
-      primary = FilledButton.icon(
-        onPressed: null, // greyed out
-        icon: const Icon(Icons.bluetooth),
-        label: const Text('Verbinde…'),
-      );
-    } else if (connected) {
-      primary = FilledButton.icon(
-        onPressed: controller.disconnect,
-        icon: const Icon(Icons.bluetooth_connected),
-        label: const Text('Verbunden'),
-      );
-    } else if (hasLast) {
-      primary = FilledButton.icon(
-        onPressed: () => controller.reconnectLast(),
-        icon: const Icon(Icons.bluetooth_searching),
-        label: Text('Reconnect'
-            '${controller.lastDeviceName!.isNotEmpty ? ' (${controller.lastDeviceName})' : ''}'),
-      );
-    } else {
-      primary = FilledButton.icon(
-        onPressed: _pickDevice,
-        icon: const Icon(Icons.bluetooth_searching),
-        label: const Text('Verbinden'),
-      );
-    }
-
-    // The X is always present (fixed layout → no flicker). While connected or
-    // connecting it cancels/disconnects; otherwise it opens the device picker.
-    final hasLink = connected || connecting;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      color: Colors.black26,
-      child: Row(
-        children: [
-          Expanded(child: primary),
-          IconButton(
-            tooltip: hasLink ? 'Trennen' : 'Anderes Gerät wählen',
-            icon: const Icon(Icons.close),
-            onPressed: hasLink ? controller.disconnect : _pickDevice,
-          ),
-        ],
-      ),
+    PopupMenuItem<String> item(String value, IconData icon, String text) =>
+        PopupMenuItem<String>(
+          value: value,
+          child: Row(children: [
+            Icon(icon, size: 20),
+            const SizedBox(width: 12),
+            Text(text),
+          ]),
+        );
+    return PopupMenuButton<String>(
+      tooltip: 'Menü',
+      onSelected: _onMenu,
+      itemBuilder: (ctx) => [
+        if (connected)
+          item('disconnect', Icons.link_off, 'Verbindung trennen')
+        else
+          item('connect', Icons.bluetooth_searching, 'Gerät verbinden…'),
+        if (hasLast) item('forget', Icons.delete_outline, 'Gerät vergessen'),
+        if (connected) item('restart', Icons.restart_alt, 'ESP32 neu starten'),
+        const PopupMenuDivider(),
+        item('settings', Icons.settings, 'Einstellungen'),
+      ],
     );
+  }
+
+  void _onMenu(String value) {
+    switch (value) {
+      case 'disconnect':
+        controller.disconnect();
+        break;
+      case 'connect':
+        _pickDevice();
+        break;
+      case 'forget':
+        controller.forgetDevice();
+        break;
+      case 'restart':
+        _confirmReset();
+        break;
+      case 'settings':
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const SettingsPage()),
+        );
+        break;
+    }
   }
 
   Widget _bankSelector() {
