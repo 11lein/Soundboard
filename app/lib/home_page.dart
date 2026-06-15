@@ -20,6 +20,7 @@ class _HomePageState extends State<HomePage> {
   List<List<String>> _rows = [];
   Map<String, dynamic> _palette = {};
   final _searchCtrl = TextEditingController();
+  final _bankPager = PageController(); // page 0 = bank 1
   String _query = '';
   bool _errorExpanded = false;
 
@@ -65,8 +66,19 @@ class _HomePageState extends State<HomePage> {
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _bankPager.dispose();
     controller.dispose();
     super.dispose();
+  }
+
+  // Switch bank from the chips, animating the swipe pager to match.
+  void _goToBank(int b) {
+    Haptics.light();
+    controller.setBank(b);
+    if (_bankPager.hasClients) {
+      _bankPager.animateToPage(b - 1,
+          duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
+    }
   }
 
   Future<void> _pickDevice() async {
@@ -172,11 +184,23 @@ class _HomePageState extends State<HomePage> {
 
   Widget _tastenTab(bool connected) {
     // Never scroll: bank selector and controls take their natural height, the
-    // grid fills whatever is left with square tiles that shrink to fit.
+    // grid fills the rest. Swipe horizontally to switch banks (one page each).
     return Column(
       children: [
         _bankSelector(),
-        Expanded(child: _grid(connected)),
+        Expanded(
+          child: PageView.builder(
+            controller: _bankPager,
+            itemCount: 6,
+            onPageChanged: (i) {
+              if (controller.activeBank != i + 1) {
+                Haptics.light();
+                controller.setBank(i + 1);
+              }
+            },
+            itemBuilder: (_, i) => _grid(connected, i + 1),
+          ),
+        ),
         _controls(connected),
       ],
     );
@@ -493,7 +517,7 @@ class _HomePageState extends State<HomePage> {
       elevation: selected ? 4 : 0,
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
-        onTap: () => _haptic(() => controller.setBank(b)),
+        onTap: () => _goToBank(b),
         child: Container(
           height: 44,
           alignment: Alignment.center,
@@ -517,7 +541,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _grid(bool connected) {
+  Widget _grid(bool connected, int bank) {
     const pad = 8.0;
     const spacing = 6.0;
     return LayoutBuilder(
@@ -537,7 +561,7 @@ class _HomePageState extends State<HomePage> {
               physics: const NeverScrollableScrollPhysics(),
               children: [
                 for (int vr = 0; vr < 5; vr++)
-                  for (int col = 0; col < 5; col++) _key(vr, col, connected),
+                  for (int col = 0; col < 5; col++) _key(vr, col, connected, bank),
               ],
             ),
           ),
@@ -546,7 +570,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _key(int vr, int col, bool connected) {
+  Widget _key(int vr, int col, bool connected, int bank) {
     final posIndex = (4 - vr) * 5 + col; // box layout: A bottom-left .. Y top-right
     final bg = _cellColor(vr, col);
     if (posIndex == 24) {
@@ -594,7 +618,7 @@ class _HomePageState extends State<HomePage> {
       );
     }
     final pos = posIndex + 1; // 1..24
-    final track = controller.activeBank * 100 + pos;
+    final track = bank * 100 + pos;
     final playing = controller.playingTrack == track;
     return _PlayPulse(
       active: playing,
@@ -607,7 +631,7 @@ class _HomePageState extends State<HomePage> {
           onTap: connected
               ? () {
                   Haptics.medium();
-                  controller.playKey(pos);
+                  controller.playNumber(track);
                 }
               : null,
           onLongPress: () {
