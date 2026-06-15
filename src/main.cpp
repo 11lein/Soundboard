@@ -10,7 +10,7 @@ const char *BT_NAME = "das_11lein";  // Bluetooth device name
 const int KEYS_PER_BANK = 24;        // sound keys A..X (Y is the mode button)
 const int MAX_VOLUME = 30;           // DFPlayer volume range is 0..30
 const int START_VOLUME_PCT = 100;    // boot volume as percent (100% = level 30)
-const int HOLD_TIME_MS = 500;        // press duration that selects the 2nd bank
+const int HOLD_TIME_MS = 250;        // press duration that selects the 2nd bank
 const int BUSY_PIN = 4;              // DFPlayer BUSY pin: LOW while a track plays
 const char MODE_KEY = 'Y';           // this key selects the bank group, no sound
 const unsigned long MODE_TIMEOUT_MS = 10000; // auto-reset to mode 0 after 10 s
@@ -83,8 +83,14 @@ bool isPlaying()
   return digitalRead(BUSY_PIN) == LOW;
 }
 
+// Pending NVS save for the volume. Flash writes block ~10-20 ms, so we don't
+// write on every +5/-5 step; loop() persists the value once it has settled.
+bool volumeDirty = false;
+unsigned long volumeChangedAt = 0;
+const unsigned long VOLUME_SAVE_DELAY_MS = 1500;
+
 // Apply a volume given in percent (0..100), map it to the DFPlayer's 0..30
-// range, and persist the percentage in NVS so it is restored on the next boot.
+// range, and mark it for a deferred NVS save (so rapid changes don't block).
 void applyVolumePct(int pct)
 {
   if (pct < 0) pct = 0;
@@ -92,7 +98,8 @@ void applyVolumePct(int pct)
   currentVolumePct = pct;
   int vol = (pct * MAX_VOLUME + 50) / 100; // percent -> 0..30 (rounded)
   myDFPlayer.volume(vol);
-  prefs.putInt("volpct", pct);
+  volumeDirty = true;
+  volumeChangedAt = millis();
 }
 
 void playTrack(int track)
@@ -137,30 +144,42 @@ void keypadEvent(KeypadEvent key)
   }
 
   // --- Sound keys A..X ---
+  // Play on PRESS for minimal latency: a tap immediately plays bank A of the
+  // current group. If the key is then held past HOLD_TIME_MS, switch to bank B.
+  const int pos = key - 'A' + 1; // 1..24
   switch (state)
   {
-  case HOLD:
-    hold = true;
-    break;
-
-  case RELEASED:
+  case PRESSED:
   {
-    byte bankIndex = modeLevel * 2 + (hold ? 1 : 0);    // 0..5
-    hold = false;
-    int track = (bankIndex + 1) * 100 + (key - 'A' + 1); // 101..624
-
     if (isPlaying() && lastKey == key)
-    { // same key pressed again → stop (toggle)
+    { // same key pressed again while it plays → stop (toggle)
       myDFPlayer.stop();
       lastKey = 0;
+      hold = false;
     }
     else
-    {
+    { // default tap → bank A of the current group, right away
+      hold = false;
       lastKey = key;
-      playTrack(track);
-      if (modeLevel != 0)
-        setMode(0); // back to banks 1 & 2 after every played sound
+      playTrack((modeLevel * 2 + 1) * 100 + pos); // bank A
     }
+    break;
+  }
+
+  case HOLD:
+  { // held long enough → switch from bank A to bank B
+    if (lastKey == key)
+    {
+      hold = true;
+      playTrack((modeLevel * 2 + 2) * 100 + pos); // bank B
+    }
+    break;
+  }
+
+  case RELEASED:
+  { // sound already started on press/hold; reset the mode after a played sound
+    if (lastKey == key && modeLevel != 0)
+      setMode(0); // back to banks 1 & 2 after every played sound
     break;
   }
 
@@ -212,6 +231,7 @@ void setup()
   // Restore the last-used volume from NVS (default START_VOLUME_PCT on 1st boot).
   prefs.begin("soundboard", false);
   applyVolumePct(prefs.getInt("volpct", START_VOLUME_PCT));
+  volumeDirty = false; // just restored – nothing to write back
 }
 
 void loop()
@@ -228,6 +248,14 @@ void loop()
   {
     btClientConnected = false;
     SerialBT.println("READY vol=" + String(currentVolumePct));
+  }
+
+  // Persist a settled volume change to NVS (deferred to avoid blocking flash
+  // writes during rapid +5/-5 tapping).
+  if (volumeDirty && millis() - volumeChangedAt > VOLUME_SAVE_DELAY_MS)
+  {
+    prefs.putInt("volpct", currentVolumePct);
+    volumeDirty = false;
   }
 
   // Non-blocking BT line reader (fixed buffer, no heap fragmentation).
