@@ -56,6 +56,8 @@ class SoundboardController extends ChangeNotifier {
   Timer? _monitor;
   bool _userDisconnected = false;
   final _rng = Random();
+  // Name of the last device, for the reconnect button label (loaded from prefs).
+  String? lastDeviceName;
 
   SoundboardController() {
     _ch.setMethodCallHandler(_onNative);
@@ -70,7 +72,9 @@ class SoundboardController extends ChangeNotifier {
 
   void _startMonitor() {
     _monitor?.cancel();
-    _monitor = Timer.periodic(const Duration(milliseconds: 1200), (_) async {
+    // Poll quickly so the connection icon reflects reality within ~1 s. Real
+    // drops are also pushed immediately from the native reader (onNative).
+    _monitor = Timer.periodic(const Duration(milliseconds: 700), (_) async {
       bool alive = false;
       try {
         alive = await _ch.invokeMethod('isConnected') == true;
@@ -94,15 +98,33 @@ class SoundboardController extends ChangeNotifier {
       // Auto-reconnect to the last device only (never another one), unless the
       // user disconnected deliberately or a connect attempt is already running.
       if (!_userDisconnected && state == ConnState.disconnected) {
-        _reconnectLast();
+        reconnectLast(silent: true);
       }
     });
   }
 
+  /// Load the last device's name from prefs (for the reconnect button label).
+  Future<void> loadLastDevice() async {
+    final prefs = await SharedPreferences.getInstance();
+    final stored = prefs.getString(_lastDeviceKey);
+    if (stored == null) return;
+    try {
+      final m = jsonDecode(stored) as Map<String, dynamic>;
+      lastDeviceName = (m['name'] ?? '').toString();
+      notifyListeners();
+    } catch (_) {/* ignore */}
+  }
+
   /// Reconnect to the last stored device only. No device picker, no fallback.
-  Future<void> _reconnectLast() async {
+  /// `silent` (used by the watchdog) suppresses the failure status text.
+  Future<void> reconnectLast({bool silent = false}) async {
     if (state == ConnState.connecting) return;
-    if (!(await Permission.bluetoothConnect.status).isGranted) return;
+    // Silent (watchdog) path must never pop a permission dialog – just check.
+    if (silent) {
+      if (!(await Permission.bluetoothConnect.status).isGranted) return;
+    } else if (!await ensureBtPermission()) {
+      return;
+    }
     final prefs = await SharedPreferences.getInstance();
     final stored = prefs.getString(_lastDeviceKey);
     if (stored == null) return;
@@ -111,7 +133,7 @@ class SoundboardController extends ChangeNotifier {
       final address = (m['address'] ?? '').toString();
       final name = (m['name'] ?? '').toString();
       if (address.isEmpty) return;
-      await connect(BtDevice(name, address), silent: true);
+      await connect(BtDevice(name, address), silent: silent);
     } catch (_) {
       /* ignore – will retry on the next tick */
     }
@@ -233,6 +255,7 @@ class SoundboardController extends ChangeNotifier {
       state = ConnState.connected;
       status = 'Verbunden mit ${d.name}';
       // Remember this device for auto-reconnect next launch.
+      lastDeviceName = d.name;
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(
           _lastDeviceKey, jsonEncode({'name': d.name, 'address': d.address}));

@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothSocket
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import java.io.InputStream
 import java.io.OutputStream
 import java.util.UUID
 import kotlin.concurrent.thread
@@ -70,6 +71,7 @@ class MainActivity : FlutterActivity() {
                 s.connect()
                 socket = s
                 output = s.outputStream
+                startReader(s) // detect a dropped link promptly
                 runOnUiThread { result.success(null) }
             } catch (e: SecurityException) {
                 closeSocket()
@@ -77,6 +79,26 @@ class MainActivity : FlutterActivity() {
             } catch (e: Exception) {
                 closeSocket()
                 runOnUiThread { result.error("CONNECT", e.message, null) }
+            }
+        }
+    }
+
+    // Continuously read from the socket. A returned -1 or an IOException means
+    // the remote (ESP32) is gone, so we close and tell Dart immediately – this
+    // makes the connection icon react within a fraction of a second instead of
+    // waiting for the next failed write. Incoming bytes themselves are ignored.
+    private fun startReader(s: BluetoothSocket) {
+        thread {
+            val ins: InputStream = try { s.inputStream } catch (_: Exception) { return@thread }
+            val buf = ByteArray(64)
+            while (true) {
+                val n = try { ins.read(buf) } catch (_: Exception) { -1 }
+                if (n < 0) break
+            }
+            // Only report if this is still the active socket (not a stale reader).
+            if (socket === s) {
+                closeSocket()
+                runOnUiThread { channel?.invokeMethod("disconnected", null) }
             }
         }
     }

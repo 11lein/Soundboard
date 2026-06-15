@@ -25,6 +25,7 @@ class _HomePageState extends State<HomePage> {
     _loadColors();
     controller.loadStoredList();
     controller.loadStoredVolume();
+    controller.loadLastDevice();
     controller.tryAutoReconnect();
     _searchCtrl.addListener(() {
       setState(() => _query = _searchCtrl.text.trim().toLowerCase());
@@ -174,15 +175,14 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _tastenTab(bool connected) {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          _bankSelector(),
-          _grid(connected),
-          const SizedBox(height: 10),
-          _controls(connected),
-        ],
-      ),
+    // Never scroll: bank selector and controls take their natural height, the
+    // grid fills whatever is left with square tiles that shrink to fit.
+    return Column(
+      children: [
+        _bankSelector(),
+        Expanded(child: _grid(connected)),
+        _controls(connected),
+      ],
     );
   }
 
@@ -340,6 +340,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _connectionBar(bool connected) {
+    final hasLast = controller.lastDeviceName != null;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -359,11 +360,23 @@ class _HomePageState extends State<HomePage> {
                 onPressed: controller.disconnect,
                 icon: const Icon(Icons.link_off),
                 label: const Text('Trennen'))
-          else
+          else ...[
+            // Primary action: reconnect to the last device.
             FilledButton.icon(
+              onPressed: hasLast ? () => controller.reconnectLast() : _pickDevice,
+              icon: const Icon(Icons.bluetooth_searching),
+              label: Text(hasLast
+                  ? 'Reconnect${controller.lastDeviceName!.isNotEmpty ? ' (${controller.lastDeviceName})' : ''}'
+                  : 'Verbinden'),
+            ),
+            // Only when a last device exists: an extra button to pick another one.
+            if (hasLast)
+              IconButton(
+                tooltip: 'Anderes Gerät wählen',
+                icon: const Icon(Icons.close),
                 onPressed: _pickDevice,
-                icon: const Icon(Icons.bluetooth_searching),
-                label: const Text('Verbinden')),
+              ),
+          ],
         ],
       ),
     );
@@ -419,19 +432,31 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _grid(bool connected) {
-    return Padding(
-      padding: const EdgeInsets.all(8),
-      child: GridView.count(
-        crossAxisCount: 5,
-        mainAxisSpacing: 6,
-        crossAxisSpacing: 6,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        children: [
-          for (int vr = 0; vr < 5; vr++)
-            for (int col = 0; col < 5; col++) _key(vr, col, connected),
-        ],
-      ),
+    const pad = 8.0;
+    const spacing = 6.0;
+    return LayoutBuilder(
+      builder: (context, c) {
+        // Largest square that fits both the available width and height, so the
+        // 5×5 grid never overflows (tiles shrink instead of the view scrolling).
+        final side = (c.maxWidth < c.maxHeight ? c.maxWidth : c.maxHeight) - 2 * pad;
+        return Center(
+          child: SizedBox(
+            width: side,
+            height: side,
+            child: GridView.count(
+              crossAxisCount: 5,
+              mainAxisSpacing: spacing,
+              crossAxisSpacing: spacing,
+              padding: EdgeInsets.zero,
+              physics: const NeverScrollableScrollPhysics(),
+              children: [
+                for (int vr = 0; vr < 5; vr++)
+                  for (int col = 0; col < 5; col++) _key(vr, col, connected),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -458,16 +483,20 @@ class _HomePageState extends State<HomePage> {
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: Colors.white24),
             ),
-            child: const Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('🎲', style: TextStyle(fontSize: 18)),
-                Text('Zufall',
-                    style: TextStyle(
-                        fontSize: 9,
-                        color: Colors.black54,
-                        fontWeight: FontWeight.bold)),
-              ],
+            padding: const EdgeInsets.all(2),
+            child: const FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('🎲', style: TextStyle(fontSize: 18)),
+                  Text('Zufall',
+                      style: TextStyle(
+                          fontSize: 9,
+                          color: Colors.black54,
+                          fontWeight: FontWeight.bold)),
+                ],
+              ),
             ),
           ),
         ),
@@ -488,9 +517,13 @@ class _HomePageState extends State<HomePage> {
             : null,
         child: Container(
           alignment: Alignment.center,
-          child: Text('$track',
-              style: const TextStyle(
-                  color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 16)),
+          padding: const EdgeInsets.all(4),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text('$track',
+                style: const TextStyle(
+                    color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 16)),
+          ),
         ),
       ),
     );
