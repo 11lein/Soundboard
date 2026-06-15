@@ -1,7 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle, HapticFeedback;
+import 'package:flutter/services.dart' show rootBundle;
+import 'haptics.dart';
 import 'package:file_picker/file_picker.dart';
 import 'soundboard_controller.dart';
 
@@ -22,6 +23,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    Haptics.init();
     _loadColors();
     controller.loadStoredList();
     controller.loadStoredVolume();
@@ -35,7 +37,7 @@ class _HomePageState extends State<HomePage> {
 
   // Run an action with a light haptic tick (used by secondary controls).
   void _haptic(VoidCallback action) {
-    HapticFeedback.selectionClick();
+    Haptics.light();
     action();
   }
 
@@ -313,7 +315,7 @@ class _HomePageState extends State<HomePage> {
                           trailing: const Icon(Icons.play_arrow),
                           onTap: connected
                               ? () {
-                                  HapticFeedback.mediumImpact();
+                                  Haptics.medium();
                                   controller.playNumber(t.n);
                                 }
                               : null,
@@ -511,7 +513,7 @@ class _HomePageState extends State<HomePage> {
           borderRadius: BorderRadius.circular(10),
           onTap: connected
               ? () {
-                  HapticFeedback.mediumImpact();
+                  Haptics.medium();
                   controller.playRandom();
                 }
               : null,
@@ -549,7 +551,7 @@ class _HomePageState extends State<HomePage> {
         borderRadius: BorderRadius.circular(10),
         onTap: connected
             ? () {
-                HapticFeedback.mediumImpact();
+                Haptics.medium();
                 controller.playKey(pos);
               }
             : null,
@@ -580,7 +582,7 @@ class _HomePageState extends State<HomePage> {
                 minimumSize: const Size.fromHeight(48)),
             onPressed: connected
                 ? () {
-                    HapticFeedback.heavyImpact();
+                    Haptics.heavy();
                     controller.stop();
                   }
                 : null,
