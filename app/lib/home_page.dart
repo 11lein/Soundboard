@@ -394,23 +394,21 @@ class _HomePageState extends State<HomePage> {
       );
     }
 
+    // The X is always present (fixed layout → no flicker). While connected or
+    // connecting it cancels/disconnects; otherwise it opens the device picker.
+    final hasLink = connected || connecting;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       color: Colors.black26,
-      // Fixed layout (no status text): the button fills the width so nothing
-      // shifts when the label changes; errors are shown as a toast instead.
       child: Row(
         children: [
           Expanded(child: primary),
-          // Switch to another device (opens the picker). Available when
-          // connected or when a last device exists; hidden while connecting.
-          if (!connecting && (connected || hasLast))
-            IconButton(
-              tooltip: 'Anderes Gerät wählen',
-              icon: const Icon(Icons.close),
-              onPressed: _pickDevice,
-            ),
+          IconButton(
+            tooltip: hasLink ? 'Trennen' : 'Anderes Gerät wählen',
+            icon: const Icon(Icons.close),
+            onPressed: hasLink ? controller.disconnect : _pickDevice,
+          ),
         ],
       ),
     );

@@ -58,6 +58,8 @@ class SoundboardController extends ChangeNotifier {
   // and (unless the user disconnected on purpose) reconnects to the last device.
   Timer? _monitor;
   bool _userDisconnected = false;
+  bool _attempting = false; // a connect attempt is in flight (guards overlap)
+  DateTime _lastAttempt = DateTime.fromMillisecondsSinceEpoch(0);
   final _rng = Random();
   // Name of the last device, for the reconnect button label (loaded from prefs).
   String? lastDeviceName;
@@ -121,7 +123,12 @@ class SoundboardController extends ChangeNotifier {
   /// Reconnect to the last stored device only. No device picker, no fallback.
   /// `silent` (used by the watchdog) suppresses the failure status text.
   Future<void> reconnectLast({bool silent = false}) async {
-    if (state == ConnState.connecting) return;
+    if (_attempting) return;
+    // Throttle silent background retries so the UI never rapidly oscillates.
+    if (silent &&
+        DateTime.now().difference(_lastAttempt) < const Duration(seconds: 3)) {
+      return;
+    }
     // Silent (watchdog) path must never pop a permission dialog – just check.
     if (silent) {
       if (!(await Permission.bluetoothConnect.status).isGranted) return;
@@ -248,11 +255,18 @@ class SoundboardController extends ChangeNotifier {
   }
 
   Future<void> connect(BtDevice d, {bool silent = false}) async {
+    if (_attempting) return;
+    _attempting = true;
+    _lastAttempt = DateTime.now();
     _userDisconnected = false;
-    state = ConnState.connecting;
     deviceName = d.name;
-    status = 'Verbinde mit ${d.name}…';
-    notifyListeners();
+    // Only a user-initiated connect shows the "Verbinde…" state. Silent
+    // background retries keep the visible state untouched (no flicker).
+    if (!silent) {
+      state = ConnState.connecting;
+      status = 'Verbinde mit ${d.name}…';
+      notifyListeners();
+    }
     try {
       await _ch.invokeMethod('connect', {'address': d.address});
       state = ConnState.connected;
@@ -267,6 +281,8 @@ class SoundboardController extends ChangeNotifier {
     } on PlatformException catch (e) {
       state = ConnState.disconnected;
       if (!silent) errorMessage = 'Verbindung fehlgeschlagen: ${e.message}';
+    } finally {
+      _attempting = false;
     }
     notifyListeners();
   }
