@@ -10,7 +10,7 @@ const char *BT_NAME = "das_11lein";  // Bluetooth device name
 const int KEYS_PER_BANK = 24;        // sound keys A..X (Y is the mode button)
 const int MAX_VOLUME = 30;           // DFPlayer volume range is 0..30
 const int START_VOLUME_PCT = 100;    // boot volume as percent (100% = level 30)
-const int HOLD_TIME_MS = 250;        // press duration that selects the 2nd bank
+const int HOLD_TIME_MS = 500;        // press duration that selects the 2nd bank
 const int BUSY_PIN = 4;              // DFPlayer BUSY pin: LOW while a track plays
 const char MODE_KEY = 'Y';           // this key selects the bank group, no sound
 const unsigned long MODE_TIMEOUT_MS = 10000; // auto-reset to mode 0 after 10 s
@@ -144,36 +144,33 @@ void keypadEvent(KeypadEvent key)
   }
 
   // --- Sound keys A..X ---
-  // Play on PRESS for minimal latency: a tap immediately plays bank A of the
-  // current group. If the key is then held past HOLD_TIME_MS, switch to bank B.
-  // (No same-key stop toggle here: at press time we cannot tell a "stop" from a
-  // "hold for bank B", and it relied on the unreliable BUSY pin anyway. Stop is
-  // done from the app; pressing the same key again simply restarts the sound.)
-  const int pos = key - 'A' + 1; // 1..24
+  // Play on RELEASE: a tap plays bank A of the current group, holding past
+  // HOLD_TIME_MS selects bank B. Pressing the same key again while it plays
+  // stops it (toggle).
   switch (state)
   {
-  case PRESSED:
-  { // default tap → bank A of the current group, right away
-    hold = false;
-    lastKey = key;
-    playTrack((modeLevel * 2 + 1) * 100 + pos); // bank A
-    break;
-  }
-
   case HOLD:
-  { // held long enough → switch from bank A to bank B
-    if (lastKey == key)
-    {
-      hold = true;
-      playTrack((modeLevel * 2 + 2) * 100 + pos); // bank B
-    }
+    hold = true;
     break;
-  }
 
   case RELEASED:
-  { // sound already started on press/hold; reset the mode after a played sound
-    if (lastKey == key && modeLevel != 0)
-      setMode(0); // back to banks 1 & 2 after every played sound
+  {
+    byte bankIndex = modeLevel * 2 + (hold ? 1 : 0);    // 0..5
+    hold = false;
+    int track = (bankIndex + 1) * 100 + (key - 'A' + 1); // 101..624
+
+    if (isPlaying() && lastKey == key)
+    { // same key pressed again → stop (toggle)
+      myDFPlayer.stop();
+      lastKey = 0;
+    }
+    else
+    {
+      lastKey = key;
+      playTrack(track);
+      if (modeLevel != 0)
+        setMode(0); // back to banks 1 & 2 after every played sound
+    }
     break;
   }
 
