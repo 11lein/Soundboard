@@ -422,15 +422,20 @@ class SoundboardController extends ChangeNotifier {
   /// Adjust the volume by a relative percentage (e.g. +5 / -5).
   Future<void> volumeStep(int delta) => setVolumePct(volumePct + delta);
 
+  // Note: always fire _send() *before* _markPlaying(). _markPlaying triggers a
+  // synchronous UI rebuild (notifyListeners); doing it first would delay the
+  // Bluetooth command by a few milliseconds. Send first, animate after.
   Future<void> playKey(int pos) {
     final n = activeBank * 100 + pos; // pos 1..24
+    final f = _send(n);
     _markPlaying(n);
-    return _send(n);
+    return f;
   }
 
   Future<void> playNumber(int n) {
+    final f = _send(n); // absolute track 101..624
     _markPlaying(n);
-    return _send(n); // absolute track 101..624
+    return f;
   }
 
   /// Play a random tone. Prefers the imported track list (real, named tracks);
@@ -439,13 +444,15 @@ class SoundboardController extends ChangeNotifier {
     final n = tracklist.isNotEmpty
         ? tracklist[_rng.nextInt(tracklist.length)].n
         : activeBank * 100 + (1 + _rng.nextInt(24));
+    final f = _send(n);
     _markPlaying(n, fromRandom: true);
-    return _send(n);
+    return f;
   }
 
   Future<void> stop() {
+    final f = _send(9999);
     _clearPlaying();
-    return _send(9999);
+    return f;
   }
   Future<void> reset() => _send(9995);
 }

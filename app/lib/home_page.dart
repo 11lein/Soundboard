@@ -417,8 +417,8 @@ class _HomePageState extends State<HomePage> {
                             ),
                             onTap: connected
                                 ? () {
+                                    controller.playNumber(t.n); // send first
                                     Haptics.medium();
-                                    controller.playNumber(t.n);
                                   }
                                 : _notConnectedHint,
                             onLongPress: () {
@@ -677,8 +677,8 @@ class _HomePageState extends State<HomePage> {
             borderRadius: BorderRadius.circular(10),
             onTap: connected
                 ? () {
+                    controller.playRandom(); // send first
                     Haptics.medium();
-                    controller.playRandom();
                   }
                 : _notConnectedHint,
             child: Container(
@@ -730,8 +730,8 @@ class _HomePageState extends State<HomePage> {
           borderRadius: BorderRadius.circular(10),
           onTap: connected
               ? () {
+                  controller.playNumber(track); // send first
                   Haptics.medium();
-                  controller.playNumber(track);
                 }
               : _notConnectedHint,
           onLongPress: () {
