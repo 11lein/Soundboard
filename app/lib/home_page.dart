@@ -267,6 +267,7 @@ class _HomePageState extends State<HomePage> {
                           style: TextStyle(color: Colors.white60)),
                     )
                   : ListView.separated(
+                      padding: const EdgeInsets.only(bottom: 16),
                       itemCount: filtered.length,
                       separatorBuilder: (_, _) =>
                           const Divider(height: 1, color: Colors.white12),
@@ -700,18 +701,20 @@ class _HomePageState extends State<HomePage> {
   void _showKeyAssignments(int pos, bool connected) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true, // size to content, scroll if it would overflow
       builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              title: Text('Belegung Taste $pos',
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: const Text('Alle sechs Bänke'),
-            ),
-            const Divider(height: 1),
-            for (int b = 1; b <= 6; b++)
-              Builder(builder: (_) {
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: Text('Belegung Taste $pos',
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: const Text('Alle sechs Bänke'),
+              ),
+              const Divider(height: 1),
+              for (int b = 1; b <= 6; b++)
+                Builder(builder: (_) {
                 final n = b * 100 + pos;
                 final title = controller.titleOf(n);
                 return ListTile(
@@ -737,7 +740,8 @@ class _HomePageState extends State<HomePage> {
                       : null,
                 );
               }),
-          ],
+            ],
+          ),
         ),
       ),
     );
