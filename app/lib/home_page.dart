@@ -27,8 +27,27 @@ class _HomePageState extends State<HomePage> {
     controller.loadStoredVolume();
     controller.loadLastDevice();
     controller.tryAutoReconnect();
+    controller.addListener(_onControllerChanged);
     _searchCtrl.addListener(() {
       setState(() => _query = _searchCtrl.text.trim().toLowerCase());
+    });
+  }
+
+  // Surface controller errors as a toast (SnackBar) and consume them, so the
+  // connection bar stays a fixed layout.
+  void _onControllerChanged() {
+    final err = controller.errorMessage;
+    if (err == null) return;
+    controller.errorMessage = null; // consume once
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(SnackBar(
+          content: Text(err),
+          backgroundColor: Colors.red.shade700,
+          behavior: SnackBarBehavior.floating,
+        ));
     });
   }
 
@@ -54,6 +73,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void dispose() {
     _searchCtrl.dispose();
+    controller.removeListener(_onControllerChanged);
     controller.dispose();
     super.dispose();
   }
@@ -378,14 +398,11 @@ class _HomePageState extends State<HomePage> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       color: Colors.black26,
+      // Fixed layout (no status text): the button fills the width so nothing
+      // shifts when the label changes; errors are shown as a toast instead.
       child: Row(
         children: [
-          Expanded(
-            child: Text(controller.status.isEmpty
-                ? (connected ? 'Verbunden' : 'Nicht verbunden')
-                : controller.status),
-          ),
-          primary,
+          Expanded(child: primary),
           // Switch to another device (opens the picker). Available when
           // connected or when a last device exists; hidden while connecting.
           if (!connecting && (connected || hasLast))

@@ -33,6 +33,9 @@ class SoundboardController extends ChangeNotifier {
   ConnState state = ConnState.disconnected;
   String? deviceName;
   String status = '';
+  // Transient error to surface as a toast/SnackBar (consumed once by the UI),
+  // kept out of `status` so the connection bar layout never shifts.
+  String? errorMessage;
   List<BtDevice> devices = [];
   int activeBank = 1; // 1..6
   // True when the BT permission was permanently denied, so the UI can offer to
@@ -217,7 +220,7 @@ class SoundboardController extends ChangeNotifier {
     st = await Permission.bluetoothConnect.request();
     permissionPermanentlyDenied = st.isPermanentlyDenied;
     if (st.isGranted) return true;
-    status = permissionPermanentlyDenied
+    errorMessage = permissionPermanentlyDenied
         ? 'Bluetooth-Berechtigung dauerhaft abgelehnt – bitte in den '
             'App-Einstellungen erlauben.'
         : 'Bluetooth-Berechtigung wird benötigt, um Geräte zu finden.';
@@ -239,7 +242,7 @@ class SoundboardController extends ChangeNotifier {
       ];
       status = '${devices.length} gekoppelte Geräte';
     } on PlatformException catch (e) {
-      status = 'Fehler: ${e.message}';
+      errorMessage = 'Fehler: ${e.message}';
     }
     notifyListeners();
   }
@@ -263,7 +266,7 @@ class SoundboardController extends ChangeNotifier {
       await _send(7000 + volumePct);
     } on PlatformException catch (e) {
       state = ConnState.disconnected;
-      if (!silent) status = 'Verbindung fehlgeschlagen: ${e.message}';
+      if (!silent) errorMessage = 'Verbindung fehlgeschlagen: ${e.message}';
     }
     notifyListeners();
   }
@@ -289,7 +292,7 @@ class SoundboardController extends ChangeNotifier {
     try {
       await _ch.invokeMethod('send', {'data': '$code\n'});
     } on PlatformException catch (e) {
-      status = 'Sendefehler: ${e.message}';
+      errorMessage = 'Sendefehler: ${e.message}';
       state = ConnState.disconnected;
       notifyListeners();
     }
