@@ -82,15 +82,29 @@ class SoundboardController extends ChangeNotifier {
     super.dispose();
   }
 
-  void _markPlaying(int n, {bool fromRandom = false}) {
-    errorMessage = null; // a successful action clears any stale error
+  // Show "now playing" for a fixed window. The ESP confirms the real start via
+  // "PLAY <n>" (also for physical keypad presses), but the DFPlayer BUSY pin is
+  // too unreliable to detect the end, so we auto-clear after a few seconds.
+  static const _playWindow = Duration(seconds: 4);
+  void _showPlaying(int n, {bool? fromRandom}) {
+    errorMessage = null;
+    if (fromRandom != null) {
+      playingFromRandom = fromRandom;
+    } else if (n != playingTrack) {
+      playingFromRandom = false; // a new/external track (e.g. physical button)
+    }
     playingTrack = n;
-    playingFromRandom = fromRandom;
     notifyListeners();
-    // Instant optimistic feedback; the real start/stop is confirmed by the ESP
-    // ("PLAY"/"IDLE"). The fallback only clears it if no IDLE ever arrives.
-    _armPlayFallback();
+    _playTimer?.cancel();
+    _playTimer = Timer(_playWindow, () {
+      playingTrack = null;
+      playingFromRandom = false;
+      notifyListeners();
+    });
   }
+
+  void _markPlaying(int n, {bool fromRandom = false}) =>
+      _showPlaying(n, fromRandom: fromRandom);
 
   void _clearPlaying() {
     _playTimer?.cancel();
@@ -284,24 +298,11 @@ class SoundboardController extends ChangeNotifier {
     debugPrint('ESP> $line'); // visible via `adb logcat | grep ESP>`
     if (line.startsWith('PLAY ')) {
       final n = int.tryParse(line.substring(5).trim());
-      if (n == null) return;
-      if (n != playingTrack) playingFromRandom = false; // external/new trigger
-      playingTrack = n;
-      _armPlayFallback();
-      notifyListeners();
-    } else if (line == 'IDLE') {
+      if (n != null) _showPlaying(n); // confirmed start (app or keypad)
+    } else if (line == 'Stopped') {
       _clearPlaying();
     }
-  }
-
-  // Safety net: if no IDLE arrives (e.g. old firmware), clear after a while.
-  void _armPlayFallback() {
-    _playTimer?.cancel();
-    _playTimer = Timer(const Duration(seconds: 8), () {
-      playingTrack = null;
-      playingFromRandom = false;
-      notifyListeners();
-    });
+    // "IDLE" from the BUSY pin is ignored on purpose (unreliable, see firmware).
   }
 
   /// Make sure BLUETOOTH_CONNECT is granted before any native BT call.
