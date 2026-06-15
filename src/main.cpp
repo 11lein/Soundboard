@@ -100,6 +100,9 @@ void playTrack(int track)
   Serial.print(F("Track: "));
   Serial.println(track);
   myDFPlayer.playFromMP3Folder(track);
+  // Notify any connected app which track is now playing – works for both
+  // keypad and Bluetooth triggers, so the app reflects the real state.
+  SerialBT.println("PLAY " + String(track));
 }
 
 void setMode(byte level)
@@ -230,6 +233,14 @@ void loop()
     SerialBT.println("READY vol=" + String(currentVolumePct));
   }
 
+  // Tell the app when playback ends (BUSY pin rising edge) so its "now playing"
+  // indicator clears at the real moment instead of after a fixed timeout.
+  static bool wasPlaying = false;
+  bool nowPlaying = isPlaying();
+  if (wasPlaying && !nowPlaying)
+    SerialBT.println("IDLE");
+  wasPlaying = nowPlaying;
+
   // Non-blocking BT line reader (fixed buffer, no heap fragmentation).
   // overflow=true marks a line longer than the buffer: we keep discarding its
   // bytes until the next '\n' so a too-long line is dropped instead of being
@@ -294,8 +305,7 @@ void loop()
         { // bank track (101..624) OR an app-only extra/parked track (>=700,
           // not reachable from the keypad; played from the app's list view)
           Serial.println("Playing track: " + String(input));
-          SerialBT.println("Playing track: " + String(input));
-          playTrack(input);
+          playTrack(input); // sends "PLAY <n>" to the app itself
         }
         else
         {

@@ -87,12 +87,9 @@ class SoundboardController extends ChangeNotifier {
     playingTrack = n;
     playingFromRandom = fromRandom;
     notifyListeners();
-    _playTimer?.cancel();
-    _playTimer = Timer(const Duration(seconds: 3), () {
-      playingTrack = null;
-      playingFromRandom = false;
-      notifyListeners();
-    });
+    // Instant optimistic feedback; the real start/stop is confirmed by the ESP
+    // ("PLAY"/"IDLE"). The fallback only clears it if no IDLE ever arrives.
+    _armPlayFallback();
   }
 
   void _clearPlaying() {
@@ -275,7 +272,35 @@ class SoundboardController extends ChangeNotifier {
       state = ConnState.disconnected;
       status = 'Verbindung getrennt';
       notifyListeners();
+    } else if (call.method == 'data') {
+      _onEspLine((call.arguments ?? '').toString());
     }
+  }
+
+  // Lines pushed back by the ESP: "PLAY <n>" when a track starts (keypad OR
+  // Bluetooth), "IDLE" when playback ends. This drives the *real* now-playing
+  // indicator, including sounds triggered physically on the box.
+  void _onEspLine(String line) {
+    if (line.startsWith('PLAY ')) {
+      final n = int.tryParse(line.substring(5).trim());
+      if (n == null) return;
+      if (n != playingTrack) playingFromRandom = false; // external/new trigger
+      playingTrack = n;
+      _armPlayFallback();
+      notifyListeners();
+    } else if (line == 'IDLE') {
+      _clearPlaying();
+    }
+  }
+
+  // Safety net: if no IDLE arrives (e.g. old firmware), clear after a while.
+  void _armPlayFallback() {
+    _playTimer?.cancel();
+    _playTimer = Timer(const Duration(seconds: 8), () {
+      playingTrack = null;
+      playingFromRandom = false;
+      notifyListeners();
+    });
   }
 
   /// Make sure BLUETOOTH_CONNECT is granted before any native BT call.

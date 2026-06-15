@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'app_settings.dart';
 import 'haptics.dart';
 
-/// Settings screen. Currently: configure the haptic (vibration) feedback.
+/// Settings screen: display options and the haptic (vibration) feedback.
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
 
@@ -26,6 +27,27 @@ class _SettingsPageState extends State<SettingsPage> {
         children: [
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 16, 16, 4),
+            child: Text('Anzeige',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          ),
+          SwitchListTile(
+            title: const Text('Titel auf den Tasten anzeigen'),
+            subtitle: const Text(
+                'Zeigt den Songtitel statt nur der Nummer (kann unübersichtlich werden)'),
+            value: AppSettings.instance.showTitlesOnKeys,
+            onChanged: (v) =>
+                setState(() => AppSettings.instance.setShowTitlesOnKeys(v)),
+          ),
+          SwitchListTile(
+            title: const Text('Bildschirm anlassen'),
+            subtitle: const Text('Display schaltet sich nicht ab, solange die App offen ist'),
+            value: AppSettings.instance.keepScreenOn,
+            onChanged: (v) =>
+                setState(() => AppSettings.instance.setKeepScreenOn(v)),
+          ),
+          const Divider(),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 8, 16, 4),
             child: Text('Haptisches Feedback',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           ),

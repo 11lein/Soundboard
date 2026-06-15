@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'app_settings.dart';
 import 'haptics.dart';
 import 'settings_page.dart';
 import 'package:file_picker/file_picker.dart';
@@ -28,6 +29,7 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     Haptics.init();
+    AppSettings.instance.load();
     _loadColors();
     controller.loadStoredList();
     controller.loadStoredVolume();
@@ -42,6 +44,19 @@ class _HomePageState extends State<HomePage> {
   void _haptic(VoidCallback action) {
     Haptics.light();
     action();
+  }
+
+  // Shown when the user taps a sound while not connected (otherwise nothing
+  // would happen and it looks broken).
+  void _notConnectedHint() {
+    Haptics.light();
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(const SnackBar(
+        duration: Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        content: Text('Nicht verbunden – oben aufs Bluetooth-Symbol tippen.'),
+      ));
   }
 
   Future<void> _loadColors() async {
@@ -155,7 +170,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: controller,
+      listenable: Listenable.merge([controller, AppSettings.instance]),
       builder: (context, _) {
         final connected = controller.state == ConnState.connected;
         return DefaultTabController(
@@ -333,7 +348,7 @@ class _HomePageState extends State<HomePage> {
                                     Haptics.medium();
                                     controller.playNumber(t.n);
                                   }
-                                : null,
+                                : _notConnectedHint,
                             onLongPress: () {
                               Haptics.light();
                               _editEntry(t);
@@ -593,7 +608,7 @@ class _HomePageState extends State<HomePage> {
                     Haptics.medium();
                     controller.playRandom();
                   }
-                : null,
+                : _notConnectedHint,
             child: Container(
               alignment: Alignment.center,
               decoration: BoxDecoration(
@@ -631,6 +646,8 @@ class _HomePageState extends State<HomePage> {
     final pos = posIndex + 1; // 1..24
     final track = bank * 100 + pos;
     final playing = controller.playingTrack == track;
+    final title =
+        AppSettings.instance.showTitlesOnKeys ? controller.titleOf(track) : null;
     return _PlayPulse(
       active: playing,
       radius: BorderRadius.circular(10),
@@ -644,7 +661,7 @@ class _HomePageState extends State<HomePage> {
                   Haptics.medium();
                   controller.playNumber(track);
                 }
-              : null,
+              : _notConnectedHint,
           onLongPress: () {
             Haptics.light();
             _showKeyAssignments(pos, connected);
@@ -654,9 +671,27 @@ class _HomePageState extends State<HomePage> {
             padding: const EdgeInsets.all(4),
             child: FittedBox(
               fit: BoxFit.scaleDown,
-              child: Text('$track',
-                  style: const TextStyle(
-                      color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 16)),
+              child: title != null
+                  ? Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(title,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                                color: Colors.black87,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                                height: 1.05)),
+                        Text('$track',
+                            style: const TextStyle(
+                                color: Colors.black54, fontSize: 9)),
+                      ],
+                    )
+                  : Text('$track',
+                      style: const TextStyle(
+                          color: Colors.black87,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16)),
             ),
           ),
         ),
@@ -921,21 +956,15 @@ class _PlayPulseState extends State<_PlayPulse>
                 animation: _c,
                 builder: (_, _) {
                   final t = Curves.easeInOut.transform(_c.value);
+                  // Subtle: a thin orange outline that gently fades in/out.
                   return Container(
                     decoration: BoxDecoration(
                       borderRadius: widget.radius,
                       border: Border.all(
-                        color: Color.lerp(Colors.orangeAccent,
-                            Colors.deepOrange, t)!,
-                        width: 2 + 2 * t,
+                        color: Colors.orangeAccent
+                            .withValues(alpha: 0.35 + 0.45 * t),
+                        width: 1.5,
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.orangeAccent.withValues(alpha: 0.5 * t),
-                          blurRadius: 10 * t,
-                          spreadRadius: 1.5 * t,
-                        ),
-                      ],
                     ),
                   );
                 },
