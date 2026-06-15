@@ -281,6 +281,7 @@ class SoundboardController extends ChangeNotifier {
   // Bluetooth), "IDLE" when playback ends. This drives the *real* now-playing
   // indicator, including sounds triggered physically on the box.
   void _onEspLine(String line) {
+    debugPrint('ESP> $line'); // visible via `adb logcat | grep ESP>`
     if (line.startsWith('PLAY ')) {
       final n = int.tryParse(line.substring(5).trim());
       if (n == null) return;

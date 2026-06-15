@@ -233,13 +233,28 @@ void loop()
     SerialBT.println("READY vol=" + String(currentVolumePct));
   }
 
-  // Tell the app when playback ends (BUSY pin rising edge) so its "now playing"
-  // indicator clears at the real moment instead of after a fixed timeout.
+  // Tell the app when playback ends so its "now playing" indicator clears at the
+  // real moment instead of after a fixed timeout. The BUSY pin can briefly read
+  // idle while switching tracks, so only report IDLE once it has been stable for
+  // a short while (debounce) to avoid false clears.
   static bool wasPlaying = false;
-  bool nowPlaying = isPlaying();
-  if (wasPlaying && !nowPlaying)
-    SerialBT.println("IDLE");
-  wasPlaying = nowPlaying;
+  static unsigned long idleSince = 0;
+  if (isPlaying())
+  {
+    wasPlaying = true;
+    idleSince = 0;
+  }
+  else if (wasPlaying)
+  {
+    if (idleSince == 0)
+      idleSince = millis();
+    else if (millis() - idleSince > 80)
+    {
+      SerialBT.println("IDLE");
+      wasPlaying = false;
+      idleSince = 0;
+    }
+  }
 
   // Non-blocking BT line reader (fixed buffer, no heap fragmentation).
   // overflow=true marks a line longer than the buffer: we keep discarding its

@@ -46,6 +46,78 @@ class _HomePageState extends State<HomePage> {
     action();
   }
 
+  // Wrap a title for a key tile: max 12 chars per line, break only *before* a
+  // non-lowercase character, max 3 lines, then cut off with an ellipsis.
+  static String _wrapKeyTitle(String s) {
+    bool isLower(String ch) {
+      final c = ch.codeUnitAt(0);
+      return (c >= 0x61 && c <= 0x7a) || 'äöüß'.contains(ch);
+    }
+
+    // Split into chunks; each chunk starts at a break-allowed position
+    // (start of string or any non-lowercase character).
+    final chunks = <String>[];
+    final buf = StringBuffer();
+    for (int i = 0; i < s.length; i++) {
+      final ch = s[i];
+      if (i > 0 && !isLower(ch)) {
+        chunks.add(buf.toString());
+        buf.clear();
+      }
+      buf.write(ch);
+    }
+    if (buf.isNotEmpty) chunks.add(buf.toString());
+
+    final lines = <String>[];
+    String cur = '';
+    bool more = false; // content left over after 3 lines
+    void pushCur() {
+      if (cur.isNotEmpty) {
+        lines.add(cur);
+        cur = '';
+      }
+    }
+
+    outer:
+    for (var chunk in chunks) {
+      // Hard-split a chunk that is itself longer than 12 (all lowercase run).
+      while (chunk.length > 12) {
+        pushCur();
+        if (lines.length >= 3) {
+          more = true;
+          break outer;
+        }
+        lines.add(chunk.substring(0, 12));
+        chunk = chunk.substring(12);
+      }
+      if (chunk.isEmpty) continue;
+      if (cur.isEmpty) {
+        cur = chunk;
+      } else if (cur.length + chunk.length <= 12) {
+        cur += chunk;
+      } else {
+        if (lines.length >= 3) {
+          more = true;
+          break outer;
+        }
+        lines.add(cur);
+        cur = chunk;
+      }
+    }
+    if (!more && cur.isNotEmpty) {
+      if (lines.length < 3) {
+        lines.add(cur);
+      } else {
+        more = true;
+      }
+    }
+    if (more && lines.length == 3) {
+      final last = lines[2];
+      lines[2] = '${last.length >= 12 ? last.substring(0, 11) : last}…';
+    }
+    return lines.join('\n');
+  }
+
   // Shown when the user taps a sound while not connected (otherwise nothing
   // would happen and it looks broken).
   void _notConnectedHint() {
@@ -675,13 +747,14 @@ class _HomePageState extends State<HomePage> {
                   ? Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(title,
+                        Text(_wrapKeyTitle(title),
                             textAlign: TextAlign.center,
+                            maxLines: 3,
                             style: const TextStyle(
                                 color: Colors.black87,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 12,
-                                height: 1.05)),
+                                height: 1.1)),
                         Text('$track',
                             style: const TextStyle(
                                 color: Colors.black54, fontSize: 9)),
