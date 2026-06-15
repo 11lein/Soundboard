@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld("api", {
   exportPdf: (html) => ipcRenderer.invoke("export-pdf", html),
   exportList: (defaultName, json) =>
     ipcRenderer.invoke("export-list", defaultName, json),
+  importList: () => ipcRenderer.invoke("import-list"),
   previewPdf: (html) => ipcRenderer.invoke("preview-pdf", html),
   deleteFiles: (folder, names) => ipcRenderer.invoke("delete-files", folder, names),
   mp3Info: (folder, name) => ipcRenderer.invoke("mp3-info", folder, name),

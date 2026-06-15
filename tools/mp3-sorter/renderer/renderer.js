@@ -24,6 +24,7 @@ const el = {
   openBtn: document.getElementById("open-btn"),
   renameBtn: document.getElementById("rename-btn"),
   listBtn: document.getElementById("list-btn"),
+  listImportBtn: document.getElementById("list-import-btn"),
   sdBtn: document.getElementById("sd-btn"),
   previewBtn: document.getElementById("preview-btn"),
   pdfBtn: document.getElementById("pdf-btn"),
@@ -446,6 +447,7 @@ function updateToolbar() {
   el.pdfBtn.disabled = n === 0;
   el.renameBtn.disabled = n === 0;
   el.listBtn.disabled = state.slots.filter(Boolean).length === 0;
+  el.listImportBtn.disabled = state.slots.filter(Boolean).length === 0;
   el.sdBtn.disabled = !state.folder || state.slots.filter(Boolean).length === 0;
 }
 
@@ -604,6 +606,50 @@ el.listBtn.addEventListener("click", async () => {
   if (res && res.ok) el.status.textContent = "Liste gespeichert: " + res.path;
   else if (res && res.error) alert("Listen-Fehler: " + res.error);
   else el.status.textContent = "";
+});
+
+// ---------- Track list import (apply edited titles for renaming) ----------
+// For each {n, title}, find the slot for that track number and set the file's
+// target name (base) to the title. The actual rename happens on "Final speichern".
+function applyImportedList(tracks) {
+  let applied = 0;
+  let missing = 0; // entry in the list but no file in that slot
+  for (const t of tracks || []) {
+    const slot = naming.slotFromPrefix(Number(t.n));
+    if (!slot) continue;
+    const entry = state.slots[slot - 1];
+    if (!entry) {
+      missing++;
+      continue;
+    }
+    // Sanitise the title into a filename base (no path separators, keep .mp3).
+    const title = String(t.title == null ? "" : t.title)
+      .trim()
+      .replace(/[\\/]+/g, "-");
+    if (!title) continue;
+    entry.base = title.replace(/\.mp3$/i, "") + ".mp3";
+    applied++;
+  }
+  return { applied, missing };
+}
+
+el.listImportBtn.addEventListener("click", async () => {
+  if (!state.slots.filter(Boolean).length) return;
+  const res = await api.importList();
+  if (!res || res.canceled) return;
+  if (!res.ok) {
+    alert("Listen-Import fehlgeschlagen: " + (res.error || ""));
+    return;
+  }
+  const { applied, missing } = applyImportedList(res.tracks);
+  if (applied === 0) {
+    el.status.textContent = "Keine passenden Titel zum Übernehmen gefunden";
+    return;
+  }
+  markDirty();
+  el.status.textContent =
+    `${applied} Titel übernommen${missing ? ` · ${missing} ohne Datei` : ""}` +
+    ` – „✅ Final speichern" benennt die Dateien um`;
 });
 
 // ---------- PDF (same 5x5 / 6-line layout) ----------
@@ -853,4 +899,9 @@ el.dropZone.addEventListener("drop", async (e) => {
 });
 
 // Test hook (used by the headless capture/smoke scripts; harmless in normal use).
-window.__sbTest = { loadFolder, buildTrackListJson, get state() { return state; } };
+window.__sbTest = {
+  loadFolder,
+  buildTrackListJson,
+  applyImportedList,
+  get state() { return state; },
+};

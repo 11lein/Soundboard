@@ -15,6 +15,7 @@ app.whenReady().then(async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "mp3smoke-"));
   fs.writeFileSync(path.join(dir, "0002_b.mp3"), "x");
   fs.writeFileSync(path.join(dir, "apple.mp3"), "x");
+  fs.writeFileSync(path.join(dir, "0101_foo.mp3"), "x"); // valid slot 1 (bank 1)
 
   const errors = [];
   const win = new BrowserWindow({
@@ -45,6 +46,10 @@ app.whenReady().then(async () => {
       out.url = await a.fileUrl(${JSON.stringify(dir)}, "apple.mp3");
       out.hasOpenBtn = !!document.getElementById("open-btn");
       out.preview = await a.previewPdf("<!doctype html><html><body><div>x</div></body></html>");
+      // Import round-trip: load the folder, apply a title to track 101, check it.
+      await window.__sbTest.loadFolder(${JSON.stringify(dir)});
+      out.importResult = window.__sbTest.applyImportedList([{ n: 101, title: "Neuer Titel" }]);
+      out.slot1Base = window.__sbTest.state.slots[0] && window.__sbTest.state.slots[0].base;
     }
     return out;
   })()`);
@@ -58,6 +63,11 @@ app.whenReady().then(async () => {
   ok("api.colors present", r.keys.includes("colors"));
   ok("api.deleteFiles present", r.keys.includes("deleteFiles"));
   ok("api.mp3Info present", r.keys.includes("mp3Info"));
+  ok("api.importList present", r.keys.includes("importList"));
+  ok(
+    "applyImportedList sets the slot title (rename round-trip)",
+    r.importResult && r.importResult.applied === 1 && r.slot1Base === "Neuer Titel.mp3"
+  );
   ok("colours have 5 rows", r.colorsRows === 5);
   ok(
     "bottom row = black,red,black,black,black",

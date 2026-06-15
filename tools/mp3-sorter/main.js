@@ -173,6 +173,25 @@ ipcMain.handle("export-list", async (_e, defaultName, json) => {
   }
 });
 
+// --- IPC: import a track list (number -> title) JSON for renaming ---
+ipcMain.handle("import-list", async () => {
+  const res = await dialog.showOpenDialog({
+    properties: ["openFile"],
+    filters: [{ name: "JSON", extensions: ["json"] }],
+  });
+  if (res.canceled || !res.filePaths.length) return { ok: false, canceled: true };
+  try {
+    const raw = await fs.readFile(res.filePaths[0], "utf8");
+    const data = JSON.parse(raw);
+    if (!data || !Array.isArray(data.tracks)) {
+      return { ok: false, error: "Keine gültige Listendatei (tracks fehlt)." };
+    }
+    return { ok: true, tracks: data.tracks };
+  } catch (err) {
+    return { ok: false, error: String(err && err.message ? err.message : err) };
+  }
+});
+
 // --- IPC: render the PDF to a temp file and show it in a preview window ---
 let previewWin = null;
 ipcMain.handle("preview-pdf", async (_e, html) => {
