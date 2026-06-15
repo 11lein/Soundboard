@@ -759,6 +759,9 @@ class _HomePageState extends State<HomePage> {
           FilledButton.icon(
             style: FilledButton.styleFrom(
                 backgroundColor: Colors.red.shade700,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: Colors.red.shade700.withValues(alpha: 0.4),
+                disabledForegroundColor: Colors.white70,
                 minimumSize: const Size.fromHeight(48)),
             onPressed: connected
                 ? () {
