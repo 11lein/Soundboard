@@ -48,6 +48,8 @@ app.whenReady().then(async () => {
       out.preview = await a.previewPdf("<!doctype html><html><body><div>x</div></body></html>");
       // Import round-trip: load the folder, apply a title to track 101, check it.
       await window.__sbTest.loadFolder(${JSON.stringify(dir)});
+      // Parked files (apple.mp3, 0002_b.mp3) get app-only numbers 700, 701…
+      out.listTracks = JSON.parse(window.__sbTest.buildTrackListJson()).tracks;
       out.importResult = window.__sbTest.applyImportedList([{ n: 101, title: "Neuer Titel" }]);
       out.slot1Base = window.__sbTest.state.slots[0] && window.__sbTest.state.slots[0].base;
     }
@@ -67,6 +69,12 @@ app.whenReady().then(async () => {
   ok(
     "applyImportedList sets the slot title (rename round-trip)",
     r.importResult && r.importResult.applied === 1 && r.slot1Base === "Neuer Titel.mp3"
+  );
+  ok(
+    "parked files get app-only numbers 700+",
+    Array.isArray(r.listTracks) &&
+      r.listTracks.some((t) => t.n === 700) &&
+      r.listTracks.some((t) => t.n === 701)
   );
   ok("colours have 5 rows", r.colorsRows === 5);
   ok(

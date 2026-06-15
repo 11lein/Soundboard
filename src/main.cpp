@@ -288,9 +288,11 @@ void loop()
           SerialBT.println("reset");
           ESP.restart();
         }
-        else if (input / 100 >= 1 && input / 100 <= NUM_BANKS &&
-                 input % 100 >= 1 && input % 100 <= KEYS_PER_BANK)
-        { // valid track: bank*100 + key, e.g. 101..124, 201..224, ... 601..624
+        else if ((input / 100 >= 1 && input / 100 <= NUM_BANKS &&
+                  input % 100 >= 1 && input % 100 <= KEYS_PER_BANK) ||
+                 (input >= 700 && input < CMD_VOLUME_SET_BASE))
+        { // bank track (101..624) OR an app-only extra/parked track (>=700,
+          // not reachable from the keypad; played from the app's list view)
           Serial.println("Playing track: " + String(input));
           SerialBT.println("Playing track: " + String(input));
           playTrack(input);

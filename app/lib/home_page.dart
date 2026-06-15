@@ -299,6 +299,7 @@ class _HomePageState extends State<HomePage> {
                         final t = filtered[i];
                         final bank = t.n ~/ 100;
                         final pos = t.n % 100;
+                        final extra = t.n >= 700; // parked: app-only, no hw key
                         final playing = controller.playingTrack == t.n;
                         return _PlayPulse(
                           active: playing,
@@ -317,7 +318,9 @@ class _HomePageState extends State<HomePage> {
                             ),
                             title: Text(t.title),
                             subtitle: Text(
-                              'Bank $bank · Taste ${pos.toString().padLeft(2, '0')}',
+                              extra
+                                  ? 'Nur App · kein Hardware-Knopf'
+                                  : 'Bank $bank · Taste ${pos.toString().padLeft(2, '0')}',
                               style: const TextStyle(
                                   color: Colors.white54, fontSize: 11),
                             ),
@@ -575,7 +578,7 @@ class _HomePageState extends State<HomePage> {
     final bg = _cellColor(vr, col);
     if (posIndex == 24) {
       // The hardware Mode key has no app function – use it for "play a random
-      // tone" instead.
+      // tone" instead. While a random track is playing, flash its number here.
       final playing = controller.playingFromRandom && controller.playingTrack != null;
       return _PlayPulse(
         active: playing,
@@ -598,19 +601,27 @@ class _HomePageState extends State<HomePage> {
                 border: Border.all(color: Colors.white24),
               ),
               padding: const EdgeInsets.all(2),
-              child: const FittedBox(
+              child: FittedBox(
                 fit: BoxFit.scaleDown,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('🎲', style: TextStyle(fontSize: 18)),
-                    Text('Zufall',
-                        style: TextStyle(
-                            fontSize: 9,
-                            color: Colors.black54,
-                            fontWeight: FontWeight.bold)),
-                  ],
-                ),
+                child: playing
+                    ? Text(
+                        '${controller.playingTrack}',
+                        style: const TextStyle(
+                            fontSize: 22,
+                            color: Colors.black87,
+                            fontWeight: FontWeight.bold),
+                      )
+                    : const Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('🎲', style: TextStyle(fontSize: 18)),
+                          Text('Zufall',
+                              style: TextStyle(
+                                  fontSize: 9,
+                                  color: Colors.black54,
+                                  fontWeight: FontWeight.bold)),
+                        ],
+                      ),
               ),
             ),
           ),

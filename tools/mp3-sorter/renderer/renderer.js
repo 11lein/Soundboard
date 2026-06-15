@@ -446,9 +446,9 @@ function updateToolbar() {
   el.previewBtn.disabled = n === 0;
   el.pdfBtn.disabled = n === 0;
   el.renameBtn.disabled = n === 0;
-  el.listBtn.disabled = state.slots.filter(Boolean).length === 0;
+  el.listBtn.disabled = n === 0; // export includes parked (700+) too
   el.listImportBtn.disabled = state.slots.filter(Boolean).length === 0;
-  el.sdBtn.disabled = !state.folder || state.slots.filter(Boolean).length === 0;
+  el.sdBtn.disabled = !state.folder || n === 0; // parked files go on the card too
 }
 
 function markDirty() {
@@ -581,10 +581,17 @@ el.pdfBtn.addEventListener("click", async () => {
 });
 
 // ---------- Track list export (number -> title) ----------
+// Parked (unprefixed) files get app-only numbers 700, 701, … in their current
+// (alphabetical) order. They are not reachable from the keypad, but playable
+// from the app's list view.
+const PARKED_BASE = 700;
 function buildTrackListJson() {
   const tracks = [];
   state.slots.forEach((entry, i) => {
     if (entry) tracks.push({ n: prefixForSlot(i + 1), title: displayName(entry.base) });
+  });
+  state.parked.forEach((entry, i) => {
+    tracks.push({ n: PARKED_BASE + i, title: displayName(entry.base) });
   });
   tracks.sort((a, b) => a.n - b.n);
   return JSON.stringify(
@@ -600,7 +607,7 @@ function listFileName() {
   return `soundboard-liste_${ts}.json`;
 }
 el.listBtn.addEventListener("click", async () => {
-  if (!state.slots.filter(Boolean).length) return;
+  if (!countFiles()) return;
   el.status.textContent = "Exportiere Liste…";
   const res = await api.exportList(listFileName(), buildTrackListJson());
   if (res && res.ok) el.status.textContent = "Liste gespeichert: " + res.path;
@@ -771,7 +778,13 @@ async function openSdDialog() {
   const slotted = state.slots
     .map((e, i) => (e ? { orig: e.orig, name: `${pad4(prefixForSlot(i + 1))}_${e.base}` } : null))
     .filter(Boolean);
-  if (!slotted.length) return;
+  // Parked files go on the card too, numbered 0700, 0701, … (app-only tracks).
+  const parked = state.parked.map((e, i) => ({
+    orig: e.orig,
+    name: `${pad4(PARKED_BASE + i)}_${e.base}`,
+  }));
+  const items = [...slotted, ...parked];
+  if (!items.length) return;
 
   const res = await api.listRemovableDrives();
   const drives = (res && res.drives) || [];
@@ -787,7 +800,7 @@ async function openSdDialog() {
     .join("");
   overlay.innerHTML = `
     <div class="dialog wide">
-      <h3>Auf SD-Karte schieben (${slotted.length} Dateien)</h3>
+      <h3>Auf SD-Karte schieben (${items.length} Dateien${parked.length ? `, davon ${parked.length} Parkplätze ab 0700` : ""})</h3>
       ${drives.length ? `<p class="muted">Wechseldatenträger:</p>${driveRows}` : `<p class="muted">Keine Wechseldatenträger erkannt.</p>`}
       <div class="dialog-buttons">
         <button id="sd-pick" class="link">📂 Ordner wählen…</button>
@@ -800,7 +813,7 @@ async function openSdDialog() {
   overlay.querySelector("#sd-pick").onclick = async () => {
     close();
     const dir = await api.pickFolder();
-    if (dir) await copyToCard(dir, slotted, null);
+    if (dir) await copyToCard(dir, items, null);
   };
   overlay.querySelectorAll(".sd-drive").forEach((btn) => {
     btn.onclick = async () => {
@@ -810,7 +823,7 @@ async function openSdDialog() {
       const ans = await sdFormatPrompt(d);
       if (ans === "cancel") return;
       doFormat = ans === "format";
-      await copyToCard(d.mount, slotted, doFormat ? d : null);
+      await copyToCard(d.mount, items, doFormat ? d : null);
     };
   });
 }
