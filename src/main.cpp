@@ -9,7 +9,7 @@
 const char *BT_NAME = "das_11lein";  // Bluetooth device name
 const int KEYS_PER_BANK = 24;        // sound keys A..X (Y is the mode button)
 const int MAX_VOLUME = 30;           // DFPlayer volume range is 0..30
-const int START_VOLUME = 30;         // volume set on boot
+const int START_VOLUME_PCT = 100;    // boot volume as percent (100% = level 30)
 const int HOLD_TIME_MS = 500;        // press duration that selects the 2nd bank
 const int BUSY_PIN = 4;              // DFPlayer BUSY pin: LOW while a track plays
 const char MODE_KEY = 'Y';           // this key selects the bank group, no sound
@@ -28,19 +28,21 @@ const int NUM_BANKS = 6; // 6 banks of 24 keys = 144 tracks
 // Files on the SD card are named accordingly (0101_*.mp3 ... 0624_*.mp3).
 
 // Bluetooth protocol:
-//   101..624 -> play that track directly (bank is encoded in the number)
+//   101..624   -> play that track directly (bank is encoded in the number)
+//   7000..7100 -> set volume to (input-7000) percent (0..100%)
 //   9995..9999 -> commands below (above any track number, descending)
+const int CMD_VOLUME_SET_BASE = 7000; // 7000+pct sets volume to pct (0..100)
 const int CMD_STOP = 9999;       // stop playback
-const int CMD_VOLUME_LOW = 9998; // set volume to 10
-const int CMD_VOLUME_MID = 9997; // set volume to 20
-const int CMD_VOLUME_HIGH = 9996; // set volume to 30 (max)
+const int CMD_VOLUME_LOW = 9998; // set volume to ~33% (compat: old "10")
+const int CMD_VOLUME_MID = 9997; // set volume to ~67% (compat: old "20")
+const int CMD_VOLUME_HIGH = 9996; // set volume to 100% (compat: old "30")
 const int CMD_RESET = 9995;      // restart the ESP32
 
 BluetoothSerial SerialBT;
 
 // Persistent storage for the last-used volume (survives reboots).
 Preferences prefs;
-int currentVolume = START_VOLUME;        // active DFPlayer volume (0..30)
+int currentVolumePct = START_VOLUME_PCT; // active volume as percent (0..100)
 volatile bool btClientConnected = false; // set by the SPP callback on connect
 
 // SPP event callback: flag a fresh connection so loop() can greet the client.
@@ -81,15 +83,16 @@ bool isPlaying()
   return digitalRead(BUSY_PIN) == LOW;
 }
 
-// Apply a volume to the DFPlayer and persist it in NVS so it is restored on
-// the next boot. Clamped to the valid 0..MAX_VOLUME range.
-void applyVolume(int vol)
+// Apply a volume given in percent (0..100), map it to the DFPlayer's 0..30
+// range, and persist the percentage in NVS so it is restored on the next boot.
+void applyVolumePct(int pct)
 {
-  if (vol < 0) vol = 0;
-  if (vol > MAX_VOLUME) vol = MAX_VOLUME;
-  currentVolume = vol;
+  if (pct < 0) pct = 0;
+  if (pct > 100) pct = 100;
+  currentVolumePct = pct;
+  int vol = (pct * MAX_VOLUME + 50) / 100; // percent -> 0..30 (rounded)
   myDFPlayer.volume(vol);
-  prefs.putInt("volume", vol);
+  prefs.putInt("volpct", pct);
 }
 
 void playTrack(int track)
@@ -206,9 +209,9 @@ void setup()
 
   Serial.println(F("DFPlayer Mini online."));
 
-  // Restore the last-used volume from NVS (default START_VOLUME on first boot).
+  // Restore the last-used volume from NVS (default START_VOLUME_PCT on 1st boot).
   prefs.begin("soundboard", false);
-  applyVolume(prefs.getInt("volume", START_VOLUME));
+  applyVolumePct(prefs.getInt("volpct", START_VOLUME_PCT));
 }
 
 void loop()
@@ -224,7 +227,7 @@ void loop()
   if (btClientConnected)
   {
     btClientConnected = false;
-    SerialBT.println("READY vol=" + String(currentVolume));
+    SerialBT.println("READY vol=" + String(currentVolumePct));
   }
 
   // Non-blocking BT line reader (fixed buffer, no heap fragmentation).
@@ -260,20 +263,25 @@ void loop()
           myDFPlayer.stop();
           SerialBT.println("Stopped");
         }
+        else if (input >= CMD_VOLUME_SET_BASE && input <= CMD_VOLUME_SET_BASE + 100)
+        { // set volume to an exact percentage (0..100%)
+          applyVolumePct(input - CMD_VOLUME_SET_BASE);
+          SerialBT.println("Volume " + String(currentVolumePct) + "%");
+        }
         else if (input == CMD_VOLUME_LOW)
         {
-          applyVolume(10);
-          SerialBT.println("Volume 10");
+          applyVolumePct(33);
+          SerialBT.println("Volume 33%");
         }
         else if (input == CMD_VOLUME_MID)
         {
-          applyVolume(20);
-          SerialBT.println("Volume 20");
+          applyVolumePct(67);
+          SerialBT.println("Volume 67%");
         }
         else if (input == CMD_VOLUME_HIGH)
         {
-          applyVolume(MAX_VOLUME);
-          SerialBT.println("Volume 30");
+          applyVolumePct(100);
+          SerialBT.println("Volume 100%");
         }
         else if (input == CMD_RESET)
         {

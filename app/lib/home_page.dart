@@ -24,6 +24,7 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _loadColors();
     controller.loadStoredList();
+    controller.loadStoredVolume();
     controller.tryAutoReconnect();
     _searchCtrl.addListener(() {
       setState(() => _query = _searchCtrl.text.trim().toLowerCase());
@@ -139,11 +140,16 @@ class _HomePageState extends State<HomePage> {
             appBar: AppBar(
               title: const Text('Soundboard Remote'),
               actions: [
-                Icon(
-                  connected ? Icons.bluetooth_connected : Icons.bluetooth_disabled,
-                  color: connected ? Colors.lightBlueAccent : Colors.white54,
+                if (connected)
+                  IconButton(
+                    tooltip: 'ESP32 neu starten',
+                    icon: const Icon(Icons.restart_alt),
+                    onPressed: _confirmReset,
+                  ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: _connIndicator(),
                 ),
-                const SizedBox(width: 12),
               ],
               bottom: const TabBar(
                 tabs: [Tab(text: 'Tasten'), Tab(text: 'Liste')],
@@ -315,6 +321,24 @@ class _HomePageState extends State<HomePage> {
     ));
   }
 
+  // Live connection indicator in the AppBar (refreshed by the controller's
+  // 1.2 s watchdog, so it tracks the real link state even when the ESP is off).
+  Widget _connIndicator() {
+    switch (controller.state) {
+      case ConnState.connecting:
+        return const SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(
+                strokeWidth: 2, color: Colors.amberAccent));
+      case ConnState.connected:
+        return const Icon(Icons.bluetooth_connected,
+            color: Colors.lightBlueAccent);
+      case ConnState.disconnected:
+        return const Icon(Icons.bluetooth_disabled, color: Colors.white54);
+    }
+  }
+
   Widget _connectionBar(bool connected) {
     return Container(
       width: double.infinity,
@@ -347,28 +371,49 @@ class _HomePageState extends State<HomePage> {
 
   Widget _bankSelector() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
       child: Row(
         children: [
-          const Padding(
-            padding: EdgeInsets.only(right: 6),
-            child: Text('Bank', style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
           for (int b = 1; b <= 6; b++)
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 3),
-                child: ChoiceChip(
-                  label: Text('$b', style: const TextStyle(fontWeight: FontWeight.bold)),
-                  labelPadding: EdgeInsets.zero,
-                  showCheckmark: false,
-                  visualDensity: VisualDensity.compact,
-                  selected: controller.activeBank == b,
-                  onSelected: (_) => controller.setBank(b),
-                ),
+                child: _bankButton(b),
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _bankButton(int b) {
+    final selected = controller.activeBank == b;
+    return Material(
+      color: selected ? Colors.lightBlueAccent : Colors.white12,
+      borderRadius: BorderRadius.circular(10),
+      elevation: selected ? 4 : 0,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: () => controller.setBank(b),
+        child: Container(
+          height: 44,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: selected ? Colors.white : Colors.white24,
+              width: selected ? 2 : 1,
+            ),
+          ),
+          child: Text(
+            '${b * 100}',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: selected ? 18 : 15,
+              color: selected ? Colors.black : Colors.white70,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -394,16 +439,38 @@ class _HomePageState extends State<HomePage> {
     final posIndex = (4 - vr) * 5 + col; // box layout: A bottom-left .. Y top-right
     final bg = _cellColor(vr, col);
     if (posIndex == 24) {
-      return Container(
-        decoration: BoxDecoration(
-          color: bg.withValues(alpha: 0.5),
+      // The hardware Mode key has no app function – use it for "play a random
+      // tone" instead.
+      return Material(
+        color: bg.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(10),
+        child: InkWell(
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.white24),
+          onTap: connected
+              ? () {
+                  HapticFeedback.selectionClick();
+                  controller.playRandom();
+                }
+              : null,
+          child: Container(
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.white24),
+            ),
+            child: const Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('🎲', style: TextStyle(fontSize: 18)),
+                Text('Zufall',
+                    style: TextStyle(
+                        fontSize: 9,
+                        color: Colors.black54,
+                        fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
         ),
-        alignment: Alignment.center,
-        child: const Text('MODE',
-            style: TextStyle(
-                fontSize: 10, color: Colors.black54, fontWeight: FontWeight.bold)),
       );
     }
     final pos = posIndex + 1; // 1..24
@@ -448,24 +515,33 @@ class _HomePageState extends State<HomePage> {
           Row(
             children: [
               Expanded(
-                  child: OutlinedButton(
-                      onPressed: connected ? () => controller.volume(10) : null,
-                      child: const Text('Vol 10'))),
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(46)),
+                  onPressed: connected ? () => controller.volumeStep(-5) : null,
+                  child: const Text('− 5 %', style: TextStyle(fontSize: 16)),
+                ),
+              ),
               const SizedBox(width: 6),
               Expanded(
-                  child: OutlinedButton(
-                      onPressed: connected ? () => controller.volume(20) : null,
-                      child: const Text('Vol 20'))),
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(46)),
+                  onPressed: connected ? () => controller.setVolumePct(100) : null,
+                  child: Text('${controller.volumePct} %',
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold)),
+                ),
+              ),
               const SizedBox(width: 6),
               Expanded(
-                  child: OutlinedButton(
-                      onPressed: connected ? () => controller.volume(30) : null,
-                      child: const Text('Vol 30'))),
-              const SizedBox(width: 6),
-              Expanded(
-                  child: OutlinedButton(
-                      onPressed: connected ? _confirmReset : null,
-                      child: const Icon(Icons.restart_alt, size: 18))),
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(46)),
+                  onPressed: connected ? () => controller.volumeStep(5) : null,
+                  child: const Text('+ 5 %', style: TextStyle(fontSize: 16)),
+                ),
+              ),
             ],
           ),
         ],

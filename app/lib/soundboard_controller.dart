@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -22,8 +24,9 @@ enum ConnState { disconnected, connecting, connected }
 
 /// Talks to the ESP32 soundboard over Bluetooth Classic (SPP) via a native
 /// platform channel. Protocol (ASCII number + '\n'):
-///   101..624 -> play track (bank*100 + key)
-///   9999 stop · 9998/9997/9996 volume 10/20/30 · 9995 restart
+///   101..624   -> play track (bank*100 + key)
+///   7000..7100 -> set volume to (n-7000) percent (0..100)
+///   9999 stop · 9995 restart
 class SoundboardController extends ChangeNotifier {
   static const _ch = MethodChannel('soundboard/bt');
 
@@ -36,6 +39,10 @@ class SoundboardController extends ChangeNotifier {
   // open the system app settings (a re-request no longer shows the dialog).
   bool permissionPermanentlyDenied = false;
 
+  // Volume in percent (0..100), mapped to the DFPlayer 0..30 range on the ESP.
+  int volumePct = 100;
+  static const _volumeKey = 'volume_pct';
+
   // Imported track list (number -> title), sorted by number.
   List<TrackEntry> tracklist = [];
   String? listImportedAt;
@@ -44,8 +51,70 @@ class SoundboardController extends ChangeNotifier {
   // Last successfully connected device, for auto-reconnect on launch.
   static const _lastDeviceKey = 'last_device';
 
+  // Connection watchdog: polls the native link so the status icon stays fresh,
+  // and (unless the user disconnected on purpose) reconnects to the last device.
+  Timer? _monitor;
+  bool _userDisconnected = false;
+  final _rng = Random();
+
   SoundboardController() {
     _ch.setMethodCallHandler(_onNative);
+    _startMonitor();
+  }
+
+  @override
+  void dispose() {
+    _monitor?.cancel();
+    super.dispose();
+  }
+
+  void _startMonitor() {
+    _monitor?.cancel();
+    _monitor = Timer.periodic(const Duration(milliseconds: 1200), (_) async {
+      bool alive = false;
+      try {
+        alive = await _ch.invokeMethod('isConnected') == true;
+      } catch (_) {
+        alive = false;
+      }
+      if (alive) {
+        if (state != ConnState.connected) {
+          state = ConnState.connected;
+          notifyListeners();
+        }
+        return;
+      }
+      // Native link is down.
+      if (state == ConnState.connected) {
+        // We thought we were connected → the link dropped.
+        state = ConnState.disconnected;
+        status = 'Verbindung verloren';
+        notifyListeners();
+      }
+      // Auto-reconnect to the last device only (never another one), unless the
+      // user disconnected deliberately or a connect attempt is already running.
+      if (!_userDisconnected && state == ConnState.disconnected) {
+        _reconnectLast();
+      }
+    });
+  }
+
+  /// Reconnect to the last stored device only. No device picker, no fallback.
+  Future<void> _reconnectLast() async {
+    if (state == ConnState.connecting) return;
+    if (!(await Permission.bluetoothConnect.status).isGranted) return;
+    final prefs = await SharedPreferences.getInstance();
+    final stored = prefs.getString(_lastDeviceKey);
+    if (stored == null) return;
+    try {
+      final m = jsonDecode(stored) as Map<String, dynamic>;
+      final address = (m['address'] ?? '').toString();
+      final name = (m['name'] ?? '').toString();
+      if (address.isEmpty) return;
+      await connect(BtDevice(name, address), silent: true);
+    } catch (_) {
+      /* ignore – will retry on the next tick */
+    }
   }
 
   /// Try to reconnect to the device used last time. Silent if none stored or
@@ -153,7 +222,8 @@ class SoundboardController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> connect(BtDevice d) async {
+  Future<void> connect(BtDevice d, {bool silent = false}) async {
+    _userDisconnected = false;
     state = ConnState.connecting;
     deviceName = d.name;
     status = 'Verbinde mit ${d.name}…';
@@ -166,14 +236,17 @@ class SoundboardController extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(
           _lastDeviceKey, jsonEncode({'name': d.name, 'address': d.address}));
+      // Push the app's current volume so the ESP matches what the UI shows.
+      await _send(7000 + volumePct);
     } on PlatformException catch (e) {
       state = ConnState.disconnected;
-      status = 'Verbindung fehlgeschlagen: ${e.message}';
+      if (!silent) status = 'Verbindung fehlgeschlagen: ${e.message}';
     }
     notifyListeners();
   }
 
   Future<void> disconnect() async {
+    _userDisconnected = true; // suppress auto-reconnect until the user reconnects
     try {
       await _ch.invokeMethod('disconnect');
     } on PlatformException {
@@ -204,10 +277,37 @@ class SoundboardController extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ---- Volume (percent 0..100) ----
+  Future<void> loadStoredVolume() async {
+    final prefs = await SharedPreferences.getInstance();
+    volumePct = prefs.getInt(_volumeKey) ?? 100;
+    notifyListeners();
+  }
+
+  /// Set the absolute volume in percent and send it to the ESP (7000 + pct).
+  Future<void> setVolumePct(int pct) async {
+    volumePct = pct.clamp(0, 100);
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_volumeKey, volumePct);
+    await _send(7000 + volumePct);
+  }
+
+  /// Adjust the volume by a relative percentage (e.g. +5 / -5).
+  Future<void> volumeStep(int delta) => setVolumePct(volumePct + delta);
+
   Future<void> playKey(int pos) => _send(activeBank * 100 + pos); // pos 1..24
   Future<void> playNumber(int n) => _send(n); // absolute track 101..624
+
+  /// Play a random tone. Prefers the imported track list (real, named tracks);
+  /// otherwise picks a random position in the active bank.
+  Future<void> playRandom() {
+    if (tracklist.isNotEmpty) {
+      return _send(tracklist[_rng.nextInt(tracklist.length)].n);
+    }
+    return _send(activeBank * 100 + (1 + _rng.nextInt(24)));
+  }
+
   Future<void> stop() => _send(9999);
-  Future<void> volume(int level) =>
-      _send(level == 10 ? 9998 : (level == 20 ? 9997 : 9996));
   Future<void> reset() => _send(9995);
 }
