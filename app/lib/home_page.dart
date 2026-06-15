@@ -33,6 +33,12 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  // Run an action with a light haptic tick (used by secondary controls).
+  void _haptic(VoidCallback action) {
+    HapticFeedback.selectionClick();
+    action();
+  }
+
   // Surface controller errors as a toast (SnackBar) and consume them, so the
   // connection bar stays a fixed layout.
   void _onControllerChanged() {
@@ -307,7 +313,7 @@ class _HomePageState extends State<HomePage> {
                           trailing: const Icon(Icons.play_arrow),
                           onTap: connected
                               ? () {
-                                  HapticFeedback.selectionClick();
+                                  HapticFeedback.mediumImpact();
                                   controller.playNumber(t.n);
                                 }
                               : null,
@@ -439,7 +445,7 @@ class _HomePageState extends State<HomePage> {
       elevation: selected ? 4 : 0,
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
-        onTap: () => controller.setBank(b),
+        onTap: () => _haptic(() => controller.setBank(b)),
         child: Container(
           height: 44,
           alignment: Alignment.center,
@@ -505,7 +511,7 @@ class _HomePageState extends State<HomePage> {
           borderRadius: BorderRadius.circular(10),
           onTap: connected
               ? () {
-                  HapticFeedback.selectionClick();
+                  HapticFeedback.mediumImpact();
                   controller.playRandom();
                 }
               : null,
@@ -543,7 +549,7 @@ class _HomePageState extends State<HomePage> {
         borderRadius: BorderRadius.circular(10),
         onTap: connected
             ? () {
-                HapticFeedback.selectionClick();
+                HapticFeedback.mediumImpact();
                 controller.playKey(pos);
               }
             : null,
@@ -572,7 +578,12 @@ class _HomePageState extends State<HomePage> {
             style: FilledButton.styleFrom(
                 backgroundColor: Colors.red.shade700,
                 minimumSize: const Size.fromHeight(48)),
-            onPressed: connected ? controller.stop : null,
+            onPressed: connected
+                ? () {
+                    HapticFeedback.heavyImpact();
+                    controller.stop();
+                  }
+                : null,
             icon: const Icon(Icons.stop),
             label: const Text('STOP'),
           ),
@@ -583,7 +594,7 @@ class _HomePageState extends State<HomePage> {
                 child: OutlinedButton(
                   style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(46)),
-                  onPressed: connected ? () => controller.volumeStep(-5) : null,
+                  onPressed: connected ? () => _haptic(() => controller.volumeStep(-5)) : null,
                   child: const Text('− 5 %', style: TextStyle(fontSize: 16)),
                 ),
               ),
@@ -592,7 +603,7 @@ class _HomePageState extends State<HomePage> {
                 child: FilledButton(
                   style: FilledButton.styleFrom(
                       minimumSize: const Size.fromHeight(46)),
-                  onPressed: connected ? () => controller.setVolumePct(100) : null,
+                  onPressed: connected ? () => _haptic(() => controller.setVolumePct(100)) : null,
                   child: Text('${controller.volumePct} %',
                       style: const TextStyle(
                           fontSize: 16, fontWeight: FontWeight.bold)),
@@ -603,7 +614,7 @@ class _HomePageState extends State<HomePage> {
                 child: OutlinedButton(
                   style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(46)),
-                  onPressed: connected ? () => controller.volumeStep(5) : null,
+                  onPressed: connected ? () => _haptic(() => controller.volumeStep(5)) : null,
                   child: const Text('+ 5 %', style: TextStyle(fontSize: 16)),
                 ),
               ),
