@@ -83,6 +83,7 @@ class SoundboardController extends ChangeNotifier {
   }
 
   void _markPlaying(int n, {bool fromRandom = false}) {
+    errorMessage = null; // a successful action clears any stale error
     playingTrack = n;
     playingFromRandom = fromRandom;
     notifyListeners();
@@ -99,6 +100,20 @@ class SoundboardController extends ChangeNotifier {
     playingTrack = null;
     playingFromRandom = false;
     notifyListeners();
+  }
+
+  /// Dismiss the current error shown in the status line.
+  void clearError() {
+    errorMessage = null;
+    notifyListeners();
+  }
+
+  /// Title of a track number from the imported list, or null if unknown.
+  String? titleOf(int n) {
+    for (final t in tracklist) {
+      if (t.n == n) return t.title;
+    }
+    return null;
   }
 
   void _startMonitor() {
@@ -231,6 +246,30 @@ class SoundboardController extends ChangeNotifier {
     }
   }
 
+  /// Edit a single title and persist the updated list (so it survives and can
+  /// be re-exported for renaming in the sorter).
+  Future<void> updateTrackTitle(int n, String title) async {
+    final i = tracklist.indexWhere((t) => t.n == n);
+    if (i < 0) return;
+    tracklist[i] = TrackEntry(n, title);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefsKey, exportJson());
+    notifyListeners();
+  }
+
+  /// Serialize the current list in the same JSON format the sorter uses, so it
+  /// can be re-imported there for file renaming.
+  String exportJson() {
+    final tracks = [
+      for (final t in tracklist) {'n': t.n, 'title': t.title}
+    ];
+    return jsonEncode({
+      'exported': DateTime.now().toIso8601String(),
+      'count': tracks.length,
+      'tracks': tracks,
+    });
+  }
+
   Future<dynamic> _onNative(MethodCall call) async {
     if (call.method == 'disconnected') {
       state = ConnState.disconnected;
@@ -297,6 +336,7 @@ class SoundboardController extends ChangeNotifier {
       await _ch.invokeMethod('connect', {'address': d.address});
       state = ConnState.connected;
       status = 'Verbunden mit ${d.name}';
+      errorMessage = null;
       // Remember this device for auto-reconnect next launch.
       lastDeviceName = d.name;
       final prefs = await SharedPreferences.getInstance();

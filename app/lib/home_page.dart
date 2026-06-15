@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'haptics.dart';
@@ -20,6 +21,7 @@ class _HomePageState extends State<HomePage> {
   Map<String, dynamic> _palette = {};
   final _searchCtrl = TextEditingController();
   String _query = '';
+  bool _errorExpanded = false;
 
   @override
   void initState() {
@@ -30,7 +32,6 @@ class _HomePageState extends State<HomePage> {
     controller.loadStoredVolume();
     controller.loadLastDevice();
     controller.tryAutoReconnect();
-    controller.addListener(_onControllerChanged);
     _searchCtrl.addListener(() {
       setState(() => _query = _searchCtrl.text.trim().toLowerCase());
     });
@@ -40,24 +41,6 @@ class _HomePageState extends State<HomePage> {
   void _haptic(VoidCallback action) {
     Haptics.light();
     action();
-  }
-
-  // Surface controller errors as a toast (SnackBar) and consume them, so the
-  // connection bar stays a fixed layout.
-  void _onControllerChanged() {
-    final err = controller.errorMessage;
-    if (err == null) return;
-    controller.errorMessage = null; // consume once
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(SnackBar(
-          content: Text(err),
-          backgroundColor: Colors.red.shade700,
-          behavior: SnackBarBehavior.floating,
-        ));
-    });
   }
 
   Future<void> _loadColors() async {
@@ -82,7 +65,6 @@ class _HomePageState extends State<HomePage> {
   @override
   void dispose() {
     _searchCtrl.dispose();
-    controller.removeListener(_onControllerChanged);
     controller.dispose();
     super.dispose();
   }
@@ -217,22 +199,32 @@ class _HomePageState extends State<HomePage> {
             children: [
               FilledButton.icon(
                 onPressed: _importList,
-                icon: const Icon(Icons.file_open),
-                label: const Text('Liste importieren'),
+                icon: const Icon(Icons.file_open, size: 18),
+                label: const Text('Import'),
               ),
+              if (list.isNotEmpty) ...[
+                const SizedBox(width: 6),
+                OutlinedButton.icon(
+                  onPressed: _exportList,
+                  icon: const Icon(Icons.save_alt, size: 18),
+                  label: const Text('Export'),
+                ),
+              ],
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   controller.listImportedAt != null
-                      ? '${list.length} Titel · importiert'
-                      : 'Keine Liste importiert',
+                      ? '${list.length} Titel'
+                      : 'Keine Liste',
                   style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  textAlign: TextAlign.end,
                 ),
               ),
               if (list.isNotEmpty)
-                OutlinedButton(
+                IconButton(
+                  tooltip: 'Stop',
                   onPressed: connected ? controller.stop : null,
-                  child: const Text('Stop'),
+                  icon: const Icon(Icons.stop),
                 ),
             ],
           ),
@@ -314,6 +306,10 @@ class _HomePageState extends State<HomePage> {
                                     controller.playNumber(t.n);
                                   }
                                 : null,
+                            onLongPress: () {
+                              Haptics.light();
+                              _editEntry(t);
+                            },
                           ),
                         );
                       },
@@ -343,6 +339,52 @@ class _HomePageState extends State<HomePage> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(n >= 0 ? '$n Titel importiert' : 'Ungültige Listendatei'),
     ));
+  }
+
+  // Export the (possibly edited) list as JSON, in the same format the sorter
+  // uses – so it can be re-imported there for file renaming.
+  Future<void> _exportList() async {
+    final d = DateTime.now();
+    String two(int x) => x.toString().padLeft(2, '0');
+    final ts =
+        '${d.year}-${two(d.month)}-${two(d.day)}_${two(d.hour)}-${two(d.minute)}-${two(d.second)}';
+    final bytes = Uint8List.fromList(utf8.encode(controller.exportJson()));
+    final path = await FilePicker.platform.saveFile(
+      dialogTitle: 'Liste exportieren',
+      fileName: 'soundboard-liste_$ts.json',
+      type: FileType.custom,
+      allowedExtensions: ['json'],
+      bytes: bytes,
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(path != null ? 'Liste exportiert' : 'Export abgebrochen'),
+    ));
+  }
+
+  // Long-press a list entry → edit its title (persisted, re-exportable).
+  Future<void> _editEntry(TrackEntry t) async {
+    final ctrl = TextEditingController(text: t.title);
+    final res = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Titel bearbeiten · ${t.n}'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: 'Titel'),
+          onSubmitted: (v) => Navigator.pop(ctx, v),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Abbrechen')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, ctrl.text),
+              child: const Text('Speichern')),
+        ],
+      ),
+    );
+    if (res != null) await controller.updateTrackTitle(t.n, res.trim());
   }
 
   // Bluetooth state icon in the AppBar (refreshed by the controller's watchdog).
@@ -567,6 +609,10 @@ class _HomePageState extends State<HomePage> {
                   controller.playKey(pos);
                 }
               : null,
+          onLongPress: () {
+            Haptics.light();
+            _showKeyAssignments(pos, connected);
+          },
           child: Container(
             alignment: Alignment.center,
             padding: const EdgeInsets.all(4),
@@ -582,6 +628,121 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // Single-line status above STOP: shows the currently playing title (if known
+  // from the imported list), or an error that can be expanded if it's long.
+  Widget _statusLine() {
+    final err = controller.errorMessage;
+    if (err != null) {
+      return InkWell(
+        onTap: () => setState(() => _errorExpanded = !_errorExpanded),
+        child: Container(
+          width: double.infinity,
+          constraints: const BoxConstraints(minHeight: 26),
+          alignment: Alignment.centerLeft,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.only(top: 2),
+                child: Icon(Icons.error_outline, size: 16, color: Colors.redAccent),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  err,
+                  maxLines: _errorExpanded ? null : 1,
+                  overflow: _errorExpanded ? null : TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                ),
+              ),
+              InkWell(
+                onTap: controller.clearError,
+                child: const Padding(
+                  padding: EdgeInsets.all(2),
+                  child: Icon(Icons.close, size: 16, color: Colors.redAccent),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    final n = controller.playingTrack;
+    final title = n == null ? null : (controller.titleOf(n) ?? '$n');
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(minHeight: 26),
+      alignment: Alignment.centerLeft,
+      child: title == null
+          ? const SizedBox.shrink()
+          : Row(
+              children: [
+                const Icon(Icons.graphic_eq, size: 16, color: Colors.orangeAccent),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        color: Colors.orangeAccent,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+
+  // Long-press a key → show all six bank assignments for that position at once
+  // (with titles from the imported list, if available); tap a row to play it.
+  void _showKeyAssignments(int pos, bool connected) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: Text('Belegung Taste $pos',
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: const Text('Alle sechs Bänke'),
+            ),
+            const Divider(height: 1),
+            for (int b = 1; b <= 6; b++)
+              Builder(builder: (_) {
+                final n = b * 100 + pos;
+                final title = controller.titleOf(n);
+                return ListTile(
+                  dense: true,
+                  leading: Text('$n',
+                      style: const TextStyle(
+                          fontFeatures: [FontFeature.tabularFigures()],
+                          color: Colors.lightBlueAccent,
+                          fontWeight: FontWeight.bold)),
+                  title: Text(title ?? '—',
+                      style: title == null
+                          ? const TextStyle(color: Colors.white38)
+                          : null),
+                  subtitle: Text('Bank $b',
+                      style: const TextStyle(fontSize: 11, color: Colors.white54)),
+                  trailing: const Icon(Icons.play_arrow),
+                  onTap: connected
+                      ? () {
+                          Haptics.medium();
+                          controller.playNumber(n);
+                          Navigator.pop(ctx);
+                        }
+                      : null,
+                );
+              }),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _controls(bool connected) {
     return Container(
       padding: const EdgeInsets.fromLTRB(8, 6, 8, 12),
@@ -589,6 +750,8 @@ class _HomePageState extends State<HomePage> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          _statusLine(),
+          const SizedBox(height: 4),
           FilledButton.icon(
             style: FilledButton.styleFrom(
                 backgroundColor: Colors.red.shade700,
