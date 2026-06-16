@@ -694,10 +694,10 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                       Text('$track',
-                          style: const TextStyle(
-                              color: Colors.black54,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600)),
+                          style: TextStyle(
+                              color: Colors.black.withValues(alpha: 0.3),
+                              fontSize: 6,
+                              height: 1.0)),
                     ],
                   )
                 // Number only: one fixed size for every tile.
@@ -887,6 +887,7 @@ class _HomePageState extends State<HomePage> {
                   style: FilledButton.styleFrom(
                       minimumSize: const Size.fromHeight(46)),
                   onPressed: connected ? () => _haptic(() => controller.setVolumePct(100)) : null,
+                  onLongPress: connected ? _showVolumeSlider : null,
                   child: Text('${controller.volumePct} %',
                       style: const TextStyle(
                           fontSize: 16, fontWeight: FontWeight.bold)),
@@ -904,6 +905,47 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  // Long-press the middle volume button → a horizontal slider for fine control.
+  void _showVolumeSlider() {
+    Haptics.light();
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: StatefulBuilder(
+          builder: (ctx, setSheet) => Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Lautstärke  ${controller.volumePct} %',
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                Row(
+                  children: [
+                    const Icon(Icons.volume_mute, size: 20),
+                    Expanded(
+                      child: Slider(
+                        value: controller.volumePct.toDouble(),
+                        min: 0,
+                        max: 100,
+                        divisions: 20, // 5 % steps → limits BT traffic while dragging
+                        label: '${controller.volumePct} %',
+                        onChanged: (v) {
+                          controller.setVolumePct(v.round());
+                          setSheet(() {});
+                        },
+                      ),
+                    ),
+                    const Icon(Icons.volume_up, size: 22),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
