@@ -1,4 +1,4 @@
-/* global naming, api */
+/* global naming, api, showDialog */
 const { BANK_SIZE, NUM_BANKS, TOTAL_SLOTS, prefixForSlot, pad4 } = naming;
 
 // Model: 144 slots (gaps allowed) + a parked list of unprefixed files.
@@ -621,35 +621,28 @@ function listFileName() {
 // Ask where the exported list should go (any combination): app assets (for the
 // next build), straight onto the phone via ADB (no build), and/or a file.
 function listExportPrompt() {
-  return new Promise((resolve) => {
-    const overlay = document.createElement("div");
-    overlay.className = "overlay";
-    overlay.innerHTML = `
-      <div class="dialog">
-        <h3>Liste exportieren</h3>
-        <p class="muted">Ziel(e) wählen:</p>
-        <div class="opt-col">
-          <label class="cb"><input type="checkbox" id="le-app" checked> 📱 App-Verzeichnis (nächster App-Build)</label>
-          <label class="cb"><input type="checkbox" id="le-adb"> 📲 Aufs Handy (ADB, ohne Build)</label>
-          <label class="cb"><input type="checkbox" id="le-file"> 💾 In Datei speichern…</label>
-        </div>
-        <div class="dialog-buttons">
-          <button id="le-cancel" class="link">Abbrechen</button>
-          <button id="le-ok" class="primary">Exportieren</button>
-        </div>
-      </div>`;
-    document.body.appendChild(overlay);
-    const done = (v) => {
-      overlay.remove();
-      resolve(v);
-    };
-    overlay.querySelector("#le-cancel").onclick = () => done(null);
-    overlay.querySelector("#le-ok").onclick = () =>
-      done({
-        app: overlay.querySelector("#le-app").checked,
-        adb: overlay.querySelector("#le-adb").checked,
-        file: overlay.querySelector("#le-file").checked,
-      });
+  return showDialog({
+    title: "Liste exportieren",
+    html: `
+      <p class="muted">Ziel(e) wählen:</p>
+      <div class="opt-col">
+        <label class="cb"><input type="checkbox" id="le-app" checked> 📱 App-Verzeichnis (nächster App-Build)</label>
+        <label class="cb"><input type="checkbox" id="le-adb"> 📲 Aufs Handy (ADB, ohne Build)</label>
+        <label class="cb"><input type="checkbox" id="le-file"> 💾 In Datei speichern…</label>
+      </div>`,
+    buttons: [
+      { label: "Abbrechen", kind: "link", value: null },
+      {
+        label: "Exportieren",
+        kind: "primary",
+        // Read the checkbox state at click time and return the chosen targets.
+        value: (root) => ({
+          app: root.querySelector("#le-app").checked,
+          adb: root.querySelector("#le-adb").checked,
+          file: root.querySelector("#le-file").checked,
+        }),
+      },
+    ],
   });
 }
 
@@ -729,61 +722,39 @@ function computeImportDiff(tracks) {
 
 // Ask whether the list to import comes from a file or from the phone (ADB).
 function listImportPrompt() {
-  return new Promise((resolve) => {
-    const overlay = document.createElement("div");
-    overlay.className = "overlay";
-    overlay.innerHTML = `
-      <div class="dialog">
-        <h3>Liste importieren</h3>
-        <p class="muted">Quelle wählen:</p>
-        <div class="dialog-buttons">
-          <button id="li-file" class="primary">📁 Aus Datei</button>
-          <button id="li-adb">📲 Vom Handy (ADB)</button>
-        </div>
-        <button id="li-cancel" class="link">Abbrechen</button>
-      </div>`;
-    document.body.appendChild(overlay);
-    const done = (v) => {
-      overlay.remove();
-      resolve(v);
-    };
-    overlay.querySelector("#li-file").onclick = () => done("file");
-    overlay.querySelector("#li-adb").onclick = () => done("adb");
-    overlay.querySelector("#li-cancel").onclick = () => done(null);
+  return showDialog({
+    title: "Liste importieren",
+    html: `<p class="muted">Quelle wählen:</p>`,
+    buttons: [
+      { label: "📁 Aus Datei", kind: "primary", value: "file" },
+      { label: "📲 Vom Handy (ADB)", value: "adb" },
+      { label: "Abbrechen", kind: "link", value: null },
+    ],
   });
 }
 
 // Diff confirmation before importing (old → new names).
 function importDiffPrompt(diff) {
-  return new Promise((resolve) => {
-    const rows = diff.changes
-      .map(
-        (c) =>
-          `<div class="rn-row"><span class="rn-old">${escapeHtml(String(c.n))} · ${escapeHtml(c.from)}</span>` +
-          `<span class="rn-arrow">→</span><span class="rn-new">${escapeHtml(c.to)}</span></div>`
-      )
-      .join("");
-    const overlay = document.createElement("div");
-    overlay.className = "overlay";
-    overlay.innerHTML = `
-      <div class="dialog wide">
-        <h3>Liste importieren – Änderungen</h3>
-        <p class="muted">${diff.changes.length} Umbenennung(en)${
-          diff.missing ? ` · ${diff.missing} ohne passende Datei` : ""
-        }</p>
-        <div class="rn-preview">${rows || '<p class="muted">Keine Änderungen.</p>'}</div>
-        <div class="dialog-buttons">
-          <button id="id-cancel" class="link">Abbrechen</button>
-          <button id="id-ok" class="primary"${diff.changes.length ? "" : " disabled"}>Übernehmen</button>
-        </div>
-      </div>`;
-    document.body.appendChild(overlay);
-    const done = (v) => {
-      overlay.remove();
-      resolve(v);
-    };
-    overlay.querySelector("#id-cancel").onclick = () => done(false);
-    overlay.querySelector("#id-ok").onclick = () => done(true);
+  const rows = diff.changes
+    .map(
+      (c) =>
+        `<div class="rn-row"><span class="rn-old">${escapeHtml(String(c.n))} · ${escapeHtml(c.from)}</span>` +
+        `<span class="rn-arrow">→</span><span class="rn-new">${escapeHtml(c.to)}</span></div>`
+    )
+    .join("");
+  return showDialog({
+    title: "Liste importieren – Änderungen",
+    wide: true,
+    html:
+      `<p class="muted">${diff.changes.length} Umbenennung(en)${
+        diff.missing ? ` · ${diff.missing} ohne passende Datei` : ""
+      }</p>` +
+      `<div class="rn-preview">${rows || '<p class="muted">Keine Änderungen.</p>'}</div>`,
+    buttons: [
+      { label: "Abbrechen", kind: "link", value: false },
+      // Nothing to apply when the diff is empty → disable the confirm button.
+      { label: "Übernehmen", kind: "primary", value: true, disabled: diff.changes.length === 0 },
+    ],
   });
 }
 
@@ -989,28 +960,15 @@ async function openSdDialog() {
 }
 
 function sdFormatPrompt(d) {
-  return new Promise((resolve) => {
-    const overlay = document.createElement("div");
-    overlay.className = "overlay";
-    overlay.innerHTML = `
-      <div class="dialog">
-        <h3>SD-Karte „${escapeHtml(d.label || d.mount)}"</h3>
-        <p>Vor dem Kopieren formatieren? <b>Alle Daten auf der Karte gehen verloren.</b>
-        Formatieren kann Administratorrechte erfordern.</p>
-        <div class="dialog-buttons">
-          <button id="f-yes" class="danger">Formatieren & Kopieren</button>
-          <button id="f-no" class="primary">Nur kopieren</button>
-        </div>
-        <button id="f-cancel" class="link">Abbrechen</button>
-      </div>`;
-    document.body.appendChild(overlay);
-    const done = (v) => {
-      overlay.remove();
-      resolve(v);
-    };
-    overlay.querySelector("#f-yes").onclick = () => done("format");
-    overlay.querySelector("#f-no").onclick = () => done("copy");
-    overlay.querySelector("#f-cancel").onclick = () => done("cancel");
+  return showDialog({
+    title: `SD-Karte „${escapeHtml(d.label || d.mount)}"`,
+    html: `<p>Vor dem Kopieren formatieren? <b>Alle Daten auf der Karte gehen verloren.</b>
+      Formatieren kann Administratorrechte erfordern.</p>`,
+    buttons: [
+      { label: "Formatieren & Kopieren", kind: "danger", value: "format" },
+      { label: "Nur kopieren", kind: "primary", value: "copy" },
+      { label: "Abbrechen", kind: "link", value: "cancel" },
+    ],
   });
 }
 
