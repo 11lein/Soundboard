@@ -449,7 +449,7 @@ function updateToolbar() {
   el.refreshBtn.disabled = !state.folder;
   el.renameBtn.disabled = n === 0;
   el.listBtn.disabled = n === 0; // export includes parked (700+) too
-  el.listImportBtn.disabled = state.slots.filter(Boolean).length === 0;
+  el.listImportBtn.disabled = n === 0; // applies to slots and parked (700+)
   el.sdBtn.disabled = !state.folder || n === 0; // parked files go on the card too
 }
 
@@ -677,28 +677,52 @@ el.listBtn.addEventListener("click", async () => {
 });
 
 // ---------- Track list import (apply edited titles for renaming) ----------
-// For each {n, title}, find the slot for that track number and set the file's
-// target name (base) to the title. The actual rename happens on "Final speichern".
+// Map a track number to its entry: 101..624 → slot; 700+ → parked file (by the
+// same alphabetical index the export used). Returns the entry or null.
+function entryForNumber(n) {
+  if (n >= 700) return state.parked[n - 700] || null;
+  const slot = naming.slotFromPrefix(n);
+  return slot ? state.slots[slot - 1] : null;
+}
+function sanitizeBase(title) {
+  return String(title == null ? "" : title).trim().replace(/[\\/]+/g, "-");
+}
+
+// For each {n, title}, set the file's target name (base) to the title – for both
+// placed (slots) and parked (700+) files. Rename happens on "Final speichern".
 function applyImportedList(tracks) {
   let applied = 0;
-  let missing = 0; // entry in the list but no file in that slot
+  let missing = 0; // entry in the list but no matching file
   for (const t of tracks || []) {
-    const slot = naming.slotFromPrefix(Number(t.n));
-    if (!slot) continue;
-    const entry = state.slots[slot - 1];
+    const entry = entryForNumber(Number(t.n));
     if (!entry) {
       missing++;
       continue;
     }
-    // Sanitise the title into a filename base (no path separators, keep .mp3).
-    const title = String(t.title == null ? "" : t.title)
-      .trim()
-      .replace(/[\\/]+/g, "-");
+    const title = sanitizeBase(t.title);
     if (!title) continue;
     entry.base = title.replace(/\.mp3$/i, "") + ".mp3";
     applied++;
   }
+  sortParked(); // parked names changed → keep alphabetical
   return { applied, missing };
+}
+
+// Diff a to-be-imported list against the current names (for the confirm view).
+function computeImportDiff(tracks) {
+  const changes = [];
+  let missing = 0;
+  for (const t of tracks || []) {
+    const entry = entryForNumber(Number(t.n));
+    if (!entry) {
+      missing++;
+      continue;
+    }
+    const to = sanitizeBase(t.title).replace(/\.mp3$/i, "");
+    const from = displayName(entry.base);
+    if (to && from !== to) changes.push({ n: Number(t.n), from, to });
+  }
+  return { changes, missing };
 }
 
 // Ask whether the list to import comes from a file or from the phone (ADB).
@@ -727,8 +751,42 @@ function listImportPrompt() {
   });
 }
 
+// Diff confirmation before importing (old → new names).
+function importDiffPrompt(diff) {
+  return new Promise((resolve) => {
+    const rows = diff.changes
+      .map(
+        (c) =>
+          `<div class="rn-row"><span class="rn-old">${escapeHtml(String(c.n))} · ${escapeHtml(c.from)}</span>` +
+          `<span class="rn-arrow">→</span><span class="rn-new">${escapeHtml(c.to)}</span></div>`
+      )
+      .join("");
+    const overlay = document.createElement("div");
+    overlay.className = "overlay";
+    overlay.innerHTML = `
+      <div class="dialog wide">
+        <h3>Liste importieren – Änderungen</h3>
+        <p class="muted">${diff.changes.length} Umbenennung(en)${
+          diff.missing ? ` · ${diff.missing} ohne passende Datei` : ""
+        }</p>
+        <div class="rn-preview">${rows || '<p class="muted">Keine Änderungen.</p>'}</div>
+        <div class="dialog-buttons">
+          <button id="id-cancel" class="link">Abbrechen</button>
+          <button id="id-ok" class="primary"${diff.changes.length ? "" : " disabled"}>Übernehmen</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    const done = (v) => {
+      overlay.remove();
+      resolve(v);
+    };
+    overlay.querySelector("#id-cancel").onclick = () => done(false);
+    overlay.querySelector("#id-ok").onclick = () => done(true);
+  });
+}
+
 el.listImportBtn.addEventListener("click", async () => {
-  if (!state.slots.filter(Boolean).length) return;
+  if (!state.slots.filter(Boolean).length && !state.parked.length) return;
   const src = await listImportPrompt();
   if (!src) return;
   el.status.textContent = src === "adb" ? "Hole Liste vom Handy…" : "";
@@ -742,15 +800,20 @@ el.listImportBtn.addEventListener("click", async () => {
     el.status.textContent = "";
     return;
   }
-  const { applied, missing } = applyImportedList(res.tracks);
-  if (applied === 0) {
-    el.status.textContent = "Keine passenden Titel zum Übernehmen gefunden";
+  const diff = computeImportDiff(res.tracks);
+  if (diff.changes.length === 0) {
+    el.status.textContent = `Keine Änderungen${diff.missing ? ` · ${diff.missing} ohne Datei` : ""}`;
     return;
   }
+  if (!(await importDiffPrompt(diff))) {
+    el.status.textContent = "";
+    return;
+  }
+  applyImportedList(res.tracks);
   markDirty();
   el.status.textContent =
-    `${applied} Titel übernommen${missing ? ` · ${missing} ohne Datei` : ""}` +
-    ` – „✅ Final speichern" benennt die Dateien um`;
+    `${diff.changes.length} Titel umbenannt${diff.missing ? ` · ${diff.missing} ohne Datei` : ""}` +
+    ` – „✅ Final speichern" schreibt sie auf die Platte`;
 });
 
 // ---------- PDF (same 5x5 / 6-line layout) ----------
