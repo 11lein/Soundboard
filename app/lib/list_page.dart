@@ -201,7 +201,7 @@ class _ListPageState extends State<ListPage> {
         final hasList = count > 0;
         final hasLatest = _latestJson != null && _latestCount > 0;
         return Scaffold(
-          appBar: AppBar(title: const Text('Titelliste')),
+          appBar: AppBar(title: const Text('Titelliste – Import/Export')),
           body: ListView(
             children: [
               ListTile(

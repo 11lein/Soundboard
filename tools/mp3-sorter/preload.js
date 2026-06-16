@@ -22,6 +22,7 @@ contextBridge.exposeInMainWorld("api", {
     ipcRenderer.invoke("export-list", defaultName, json),
   saveAppList: (json) => ipcRenderer.invoke("save-app-list", json),
   adbPushList: (json) => ipcRenderer.invoke("adb-push-list", json),
+  adbPullList: () => ipcRenderer.invoke("adb-pull-list"),
   importList: () => ipcRenderer.invoke("import-list"),
   previewPdf: (html) => ipcRenderer.invoke("preview-pdf", html),
   deleteFiles: (folder, names) => ipcRenderer.invoke("delete-files", folder, names),

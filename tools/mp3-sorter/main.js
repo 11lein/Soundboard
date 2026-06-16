@@ -236,6 +236,30 @@ ipcMain.handle("adb-push-list", async (_e, json) => {
   }
 });
 
+// --- IPC: pull the app's current (edited) list from the phone via ADB ---
+const APP_LIST_FROM_DEVICE =
+  "/sdcard/Android/data/de.lein11.soundboard_remote/files/tracklist_app.json";
+ipcMain.handle("adb-pull-list", async () => {
+  const tmp = path.join(os.tmpdir(), `soundboard-pull-${Date.now()}.json`);
+  try {
+    await execFileP("adb", ["pull", APP_LIST_FROM_DEVICE, tmp]);
+    const data = JSON.parse(await fs.readFile(tmp, "utf8"));
+    if (!data || !Array.isArray(data.tracks)) {
+      return { ok: false, error: "Keine gültige Liste auf dem Handy." };
+    }
+    return { ok: true, tracks: data.tracks };
+  } catch (err) {
+    const msg =
+      err && err.code === "ENOENT"
+        ? "adb nicht gefunden – Platform-Tools im PATH?"
+        : "Konnte die Liste nicht vom Handy holen (App hat noch keine erstellt, " +
+          "oder kein Gerät verbunden).";
+    return { ok: false, error: msg };
+  } finally {
+    fs.unlink(tmp).catch(() => {});
+  }
+});
+
 // --- IPC: import a track list (number -> title) JSON for renaming ---
 ipcMain.handle("import-list", async () => {
   const res = await dialog.showOpenDialog({

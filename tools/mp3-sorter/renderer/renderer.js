@@ -701,12 +701,45 @@ function applyImportedList(tracks) {
   return { applied, missing };
 }
 
+// Ask whether the list to import comes from a file or from the phone (ADB).
+function listImportPrompt() {
+  return new Promise((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.className = "overlay";
+    overlay.innerHTML = `
+      <div class="dialog">
+        <h3>Liste importieren</h3>
+        <p class="muted">Quelle wählen:</p>
+        <div class="dialog-buttons">
+          <button id="li-file" class="primary">📁 Aus Datei</button>
+          <button id="li-adb">📲 Vom Handy (ADB)</button>
+        </div>
+        <button id="li-cancel" class="link">Abbrechen</button>
+      </div>`;
+    document.body.appendChild(overlay);
+    const done = (v) => {
+      overlay.remove();
+      resolve(v);
+    };
+    overlay.querySelector("#li-file").onclick = () => done("file");
+    overlay.querySelector("#li-adb").onclick = () => done("adb");
+    overlay.querySelector("#li-cancel").onclick = () => done(null);
+  });
+}
+
 el.listImportBtn.addEventListener("click", async () => {
   if (!state.slots.filter(Boolean).length) return;
-  const res = await api.importList();
-  if (!res || res.canceled) return;
+  const src = await listImportPrompt();
+  if (!src) return;
+  el.status.textContent = src === "adb" ? "Hole Liste vom Handy…" : "";
+  const res = src === "adb" ? await api.adbPullList() : await api.importList();
+  if (!res || res.canceled) {
+    el.status.textContent = "";
+    return;
+  }
   if (!res.ok) {
     alert("Listen-Import fehlgeschlagen: " + (res.error || ""));
+    el.status.textContent = "";
     return;
   }
   const { applied, missing } = applyImportedList(res.tracks);

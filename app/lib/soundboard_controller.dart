@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -220,6 +222,7 @@ class SoundboardController extends ChangeNotifier {
     final json = prefs.getString(_prefsKey);
     if (json != null) _parseList(json);
     notifyListeners();
+    _syncDeviceFile();
   }
 
   /// Import a list exported by the sorter (JSON). Returns the entry count.
@@ -228,7 +231,20 @@ class SoundboardController extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_prefsKey, json);
     notifyListeners();
+    _syncDeviceFile();
     return n;
+  }
+
+  /// Mirror the current (possibly edited) list to a file in the app's external
+  /// files dir, so the sorter can pull it via ADB for renaming:
+  ///   adb pull /sdcard/Android/data/de.lein11.soundboard_remote/files/tracklist_app.json
+  Future<void> _syncDeviceFile() async {
+    if (tracklist.isEmpty) return;
+    try {
+      final dir = await getExternalStorageDirectory();
+      if (dir == null) return;
+      await File('${dir.path}/tracklist_app.json').writeAsString(exportJson());
+    } catch (_) {/* best effort */}
   }
 
   int _parseList(String json) {
@@ -270,6 +286,7 @@ class SoundboardController extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_prefsKey, exportJson());
     notifyListeners();
+    _syncDeviceFile();
   }
 
   /// Serialize the current list in the same JSON format the sorter uses, so it
