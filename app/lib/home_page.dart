@@ -272,7 +272,12 @@ class _HomePageState extends State<HomePage> {
             ),
             body: SafeArea(
               child: TabBarView(
-                children: [_tastenTab(connected), _listeTab(connected)],
+                // Keep both tabs alive so switching away and back doesn't reset
+                // the swipe page (bank) or the list scroll/search.
+                children: [
+                  _KeepAlive(child: _tastenTab(connected)),
+                  _KeepAlive(child: _listeTab(connected)),
+                ],
               ),
             ),
           ),
@@ -1085,6 +1090,28 @@ class _HomePageState extends State<HomePage> {
       ),
     );
     if (ok == true) controller.reset();
+  }
+}
+
+/// Keeps its [child]'s state alive when scrolled off-screen in a TabBarView, so
+/// the bank swipe page and list scroll position survive a tab switch.
+class _KeepAlive extends StatefulWidget {
+  final Widget child;
+  const _KeepAlive({required this.child});
+
+  @override
+  State<_KeepAlive> createState() => _KeepAliveState();
+}
+
+class _KeepAliveState extends State<_KeepAlive>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
   }
 }
 
