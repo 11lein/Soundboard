@@ -618,13 +618,52 @@ function listFileName() {
   const ts = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}_${p(d.getHours())}-${p(d.getMinutes())}-${p(d.getSeconds())}`;
   return `soundboard-liste_${ts}.json`;
 }
+// Ask where the exported list should go: into the app's assets (for the next
+// app build), to a chosen file, or both.
+function listExportPrompt() {
+  return new Promise((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.className = "overlay";
+    overlay.innerHTML = `
+      <div class="dialog">
+        <h3>Liste exportieren</h3>
+        <p class="muted">Wohin soll die Titelliste?</p>
+        <div class="dialog-buttons">
+          <button id="le-app" class="primary">📱 App-Verzeichnis</button>
+          <button id="le-file">💾 Speichern unter…</button>
+          <button id="le-both">Beides</button>
+        </div>
+        <button id="le-cancel" class="link">Abbrechen</button>
+      </div>`;
+    document.body.appendChild(overlay);
+    const done = (v) => {
+      overlay.remove();
+      resolve(v);
+    };
+    overlay.querySelector("#le-app").onclick = () => done("app");
+    overlay.querySelector("#le-file").onclick = () => done("file");
+    overlay.querySelector("#le-both").onclick = () => done("both");
+    overlay.querySelector("#le-cancel").onclick = () => done("cancel");
+  });
+}
+
 el.listBtn.addEventListener("click", async () => {
   if (!countFiles()) return;
-  el.status.textContent = "Exportiere Liste…";
-  const res = await api.exportList(listFileName(), buildTrackListJson());
-  if (res && res.ok) el.status.textContent = "Liste gespeichert: " + res.path;
-  else if (res && res.error) alert("Listen-Fehler: " + res.error);
-  else el.status.textContent = "";
+  const where = await listExportPrompt();
+  if (where === "cancel") return;
+  const json = buildTrackListJson();
+  const msgs = [];
+  if (where === "app" || where === "both") {
+    const r = await api.saveAppList(json);
+    if (r && r.ok) msgs.push("App-Verzeichnis ✔");
+    else if (r && r.error) alert("App-Verzeichnis-Fehler: " + r.error);
+  }
+  if (where === "file" || where === "both") {
+    const r = await api.exportList(listFileName(), json);
+    if (r && r.ok) msgs.push("Datei: " + r.path);
+    else if (r && r.error) alert("Datei-Fehler: " + r.error);
+  }
+  el.status.textContent = msgs.length ? "Liste gespeichert – " + msgs.join(" · ") : "";
 });
 
 // ---------- Track list import (apply edited titles for renaming) ----------

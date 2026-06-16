@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'soundboard_controller.dart';
 
 /// Manage the imported title list: import (from the app's bundled copy or a
@@ -68,6 +69,26 @@ class _ListPageState extends State<ListPage> {
       content = await File(f.path!).readAsString();
     }
     if (content != null) await _previewAndImport(content);
+  }
+
+  // Load a list pushed via ADB into the app's external files dir – no rebuild:
+  //   adb push tracklist.json /sdcard/Android/data/de.lein11.soundboard_remote/files/tracklist.json
+  Future<void> _importFromDevice() async {
+    try {
+      final dir = await getExternalStorageDirectory();
+      if (dir == null) {
+        _toast('Kein App-Speicher verfügbar');
+        return;
+      }
+      final f = File('${dir.path}/tracklist.json');
+      if (!await f.exists()) {
+        _toast('Keine per ADB übertragene Liste gefunden');
+        return;
+      }
+      await _previewAndImport(await f.readAsString());
+    } catch (e) {
+      _toast('Fehler: $e');
+    }
   }
 
   Future<void> _export() async {
@@ -196,6 +217,14 @@ class _ListPageState extends State<ListPage> {
                 trailing: const Icon(Icons.chevron_right),
                 enabled: hasBundled,
                 onTap: hasBundled ? () => _previewAndImport(_bundledJson!) : null,
+              ),
+              ListTile(
+                leading: const Icon(Icons.usb),
+                title: const Text('Per ADB übertragene Liste'),
+                subtitle: const Text(
+                    'adb push … /Android/data/de.lein11.soundboard_remote/files/tracklist.json'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: _importFromDevice,
               ),
               ListTile(
                 leading: const Icon(Icons.file_open),

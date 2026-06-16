@@ -189,24 +189,28 @@ ipcMain.handle("export-pdf", async (_e, html) => {
   }
 });
 
-// --- IPC: export the track list (number -> title) as JSON ---
+// --- IPC: export the track list (number -> title) to a chosen file ---
 ipcMain.handle("export-list", async (_e, defaultName, json) => {
-  // Always drop a copy into the app's assets, so the next app build bundles the
-  // latest list and the phone can import it without copying a file around.
-  try {
-    const appCopy = path.join(__dirname, "..", "..", "app", "assets", "tracklist.json");
-    await fs.writeFile(appCopy, json, "utf8");
-  } catch {
-    /* ignore – e.g. running from a packaged build without the repo layout */
-  }
   const save = await dialog.showSaveDialog({
     defaultPath: defaultName,
     filters: [{ name: "JSON", extensions: ["json"] }],
   });
-  if (save.canceled || !save.filePath) return { ok: false };
+  if (save.canceled || !save.filePath) return { ok: false, canceled: true };
   try {
     await fs.writeFile(save.filePath, json, "utf8");
     return { ok: true, path: save.filePath };
+  } catch (err) {
+    return { ok: false, error: String(err && err.message ? err.message : err) };
+  }
+});
+
+// --- IPC: drop a copy into the app's assets (app/assets/tracklist.json) so the
+// next app build bundles the latest list ---
+ipcMain.handle("save-app-list", async (_e, json) => {
+  const appCopy = path.join(__dirname, "..", "..", "app", "assets", "tracklist.json");
+  try {
+    await fs.writeFile(appCopy, json, "utf8");
+    return { ok: true, path: appCopy };
   } catch (err) {
     return { ok: false, error: String(err && err.message ? err.message : err) };
   }

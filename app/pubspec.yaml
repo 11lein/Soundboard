@@ -48,6 +48,9 @@ dependencies:
   # Keep the screen awake while the option is enabled.
   wakelock_plus: ^1.2.8
 
+  # Read a list pushed via `adb push` into the app's external files dir.
+  path_provider: ^2.1.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
