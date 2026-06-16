@@ -48,6 +48,14 @@ header {
   padding: 5px 9px;
   font-size: 12px;
 }
+/* Status fills the left side, pushing the action buttons to the right. */
+#status {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 button {
   background: var(--row);

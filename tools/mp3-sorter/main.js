@@ -516,6 +516,9 @@ ipcMain.handle("cancel-copy", () => {
 ipcMain.handle("copy-to-card", async (event, srcFolder, targetDir, items) => {
   copyCancelled = false;
   try {
+    // Clean sync: wipe the MP3 folder first, then copy everything fresh, so the
+    // card never keeps stale/renamed files.
+    await fs.rm(targetDir, { recursive: true, force: true });
     await fs.mkdir(targetDir, { recursive: true });
     let copied = 0;
     for (const it of items) {

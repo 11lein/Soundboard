@@ -960,6 +960,7 @@ async function openSdDialog() {
   overlay.innerHTML = `
     <div class="dialog wide">
       <h3>Auf SD-Karte schieben (${items.length} Dateien${parked.length ? `, davon ${parked.length} Parkplätze ab 0700` : ""})</h3>
+      <p class="muted">Der <code>MP3</code>-Ordner auf dem Ziel wird zuvor geleert und neu befüllt.</p>
       ${drives.length ? `<p class="muted">Wechseldatenträger:</p>${driveRows}` : `<p class="muted">Keine Wechseldatenträger erkannt.</p>`}
       <div class="dialog-buttons">
         <button id="sd-pick" class="link">📂 Ordner wählen…</button>
