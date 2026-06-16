@@ -6,6 +6,9 @@ import 'haptics.dart';
 import 'list_page.dart';
 import 'settings_page.dart';
 import 'soundboard_controller.dart';
+import 'widgets/keep_alive.dart';
+import 'widgets/key_title.dart';
+import 'widgets/play_pulse.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -43,80 +46,6 @@ class _HomePageState extends State<HomePage> {
   void _haptic(VoidCallback action) {
     Haptics.light();
     action();
-  }
-
-  // Wrap a title for a key tile: max 12 chars per line, break only *before* a
-  // non-lowercase character, max 3 lines, then cut off with an ellipsis.
-  static String _wrapKeyTitle(String s) {
-    bool isLower(String ch) {
-      final c = ch.codeUnitAt(0);
-      return (c >= 0x61 && c <= 0x7a) || 'äöüß'.contains(ch);
-    }
-
-    // Split into chunks; each chunk starts at a break-allowed position
-    // (start of string or any non-lowercase character).
-    final chunks = <String>[];
-    final buf = StringBuffer();
-    for (int i = 0; i < s.length; i++) {
-      final ch = s[i];
-      if (i > 0 && !isLower(ch)) {
-        chunks.add(buf.toString());
-        buf.clear();
-      }
-      buf.write(ch);
-    }
-    if (buf.isNotEmpty) chunks.add(buf.toString());
-
-    final lines = <String>[];
-    String cur = '';
-    bool more = false; // content left over after 3 lines
-    void pushCur() {
-      if (cur.isNotEmpty) {
-        lines.add(cur);
-        cur = '';
-      }
-    }
-
-    outer:
-    for (var chunk in chunks) {
-      // Hard-split a chunk that is itself longer than 12 (all lowercase run).
-      while (chunk.length > 12) {
-        pushCur();
-        if (lines.length >= 3) {
-          more = true;
-          break outer;
-        }
-        lines.add(chunk.substring(0, 12));
-        chunk = chunk.substring(12);
-      }
-      if (chunk.isEmpty) continue;
-      if (cur.isEmpty) {
-        cur = chunk;
-      } else if (cur.length < 6 && cur.length + chunk.length <= 12) {
-        // Only keep merging while the line is still short; once it reaches ~6
-        // characters, break at the next opportunity (shorter, tidier lines).
-        cur += chunk;
-      } else {
-        if (lines.length >= 3) {
-          more = true;
-          break outer;
-        }
-        lines.add(cur);
-        cur = chunk;
-      }
-    }
-    if (!more && cur.isNotEmpty) {
-      if (lines.length < 3) {
-        lines.add(cur);
-      } else {
-        more = true;
-      }
-    }
-    if (more && lines.length == 3) {
-      final last = lines[2];
-      lines[2] = '${last.length >= 12 ? last.substring(0, 11) : last}…';
-    }
-    return lines.join('\n');
   }
 
   // Shown when the user taps a sound while not connected (otherwise nothing
@@ -275,8 +204,8 @@ class _HomePageState extends State<HomePage> {
                 // Keep both tabs alive so switching away and back doesn't reset
                 // the swipe page (bank) or the list scroll/search.
                 children: [
-                  _KeepAlive(child: _tastenTab(connected)),
-                  _KeepAlive(child: _listeTab(connected)),
+                  KeepAlive(child: _tastenTab(connected)),
+                  KeepAlive(child: _listeTab(connected)),
                 ],
               ),
             ),
@@ -388,7 +317,7 @@ class _HomePageState extends State<HomePage> {
                       itemBuilder: (context, i) {
                         final t = filtered[i];
                         final playing = controller.playingTrack == t.n;
-                        return _PlayPulse(
+                        return PlayPulse(
                           active: playing,
                           radius: BorderRadius.circular(6),
                           child: ListTile(
@@ -667,7 +596,7 @@ class _HomePageState extends State<HomePage> {
 
   Widget _extraTile(TrackEntry t, bool connected) {
     final playing = controller.playingTrack == t.n;
-    return _PlayPulse(
+    return PlayPulse(
       active: playing,
       radius: BorderRadius.circular(10),
       child: Material(
@@ -693,7 +622,7 @@ class _HomePageState extends State<HomePage> {
                   child: Center(
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
-                      child: Text(_wrapKeyTitle(t.title),
+                      child: Text(wrapKeyTitle(t.title),
                           textAlign: TextAlign.center,
                           maxLines: 3,
                           style: const TextStyle(
@@ -724,7 +653,7 @@ class _HomePageState extends State<HomePage> {
       // The hardware Mode key has no app function – use it for "play a random
       // tone" instead. While a random track is playing, flash its number here.
       final playing = controller.playingFromRandom && controller.playingTrack != null;
-      return _PlayPulse(
+      return PlayPulse(
         active: playing,
         radius: BorderRadius.circular(10),
         child: Material(
@@ -777,7 +706,7 @@ class _HomePageState extends State<HomePage> {
     final playing = controller.playingTrack == track;
     final title =
         AppSettings.instance.showTitlesOnKeys ? controller.titleOf(track) : null;
-    return _PlayPulse(
+    return PlayPulse(
       active: playing,
       radius: BorderRadius.circular(10),
       child: Material(
@@ -805,7 +734,7 @@ class _HomePageState extends State<HomePage> {
                         child: Center(
                           child: FittedBox(
                             fit: BoxFit.scaleDown,
-                            child: Text(_wrapKeyTitle(title),
+                            child: Text(wrapKeyTitle(title),
                                 textAlign: TextAlign.center,
                                 maxLines: 3,
                                 style: const TextStyle(
@@ -1090,103 +1019,5 @@ class _HomePageState extends State<HomePage> {
       ),
     );
     if (ok == true) controller.reset();
-  }
-}
-
-/// Keeps its [child]'s state alive when scrolled off-screen in a TabBarView, so
-/// the bank swipe page and list scroll position survive a tab switch.
-class _KeepAlive extends StatefulWidget {
-  final Widget child;
-  const _KeepAlive({required this.child});
-
-  @override
-  State<_KeepAlive> createState() => _KeepAliveState();
-}
-
-class _KeepAliveState extends State<_KeepAlive>
-    with AutomaticKeepAliveClientMixin {
-  @override
-  bool get wantKeepAlive => true;
-
-  @override
-  Widget build(BuildContext context) {
-    super.build(context);
-    return widget.child;
-  }
-}
-
-/// Overlays a pulsing "now playing" glow on its [child] while [active] is true.
-/// The animation only runs while active (no idle controllers for every tile).
-class _PlayPulse extends StatefulWidget {
-  final bool active;
-  final BorderRadius radius;
-  final Widget child;
-  const _PlayPulse({
-    required this.active,
-    required this.radius,
-    required this.child,
-  });
-
-  @override
-  State<_PlayPulse> createState() => _PlayPulseState();
-}
-
-class _PlayPulseState extends State<_PlayPulse>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(
-      vsync: this, duration: const Duration(milliseconds: 600));
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.active) _c.repeat(reverse: true);
-  }
-
-  @override
-  void didUpdateWidget(_PlayPulse old) {
-    super.didUpdateWidget(old);
-    if (widget.active && !_c.isAnimating) {
-      _c.repeat(reverse: true);
-    } else if (!widget.active && _c.isAnimating) {
-      _c.stop();
-      _c.value = 0;
-    }
-  }
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        widget.child,
-        if (widget.active)
-          Positioned.fill(
-            child: IgnorePointer(
-              child: AnimatedBuilder(
-                animation: _c,
-                builder: (_, _) {
-                  final t = Curves.easeInOut.transform(_c.value);
-                  // Subtle: a thin orange outline that gently fades in/out.
-                  return Container(
-                    decoration: BoxDecoration(
-                      borderRadius: widget.radius,
-                      border: Border.all(
-                        color: Colors.orangeAccent
-                            .withValues(alpha: 0.35 + 0.45 * t),
-                        width: 1.5,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-      ],
-    );
   }
 }
