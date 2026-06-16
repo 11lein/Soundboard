@@ -1,5 +1,6 @@
 import 'dart:convert';
-import 'package:flutter/material.dart';
+// Hide Flutter's built-in KeepAlive to avoid a name clash with our widgets/keep_alive.dart.
+import 'package:flutter/material.dart' hide KeepAlive;
 import 'package:flutter/services.dart' show rootBundle;
 import 'app_settings.dart';
 import 'haptics.dart';
@@ -17,12 +18,15 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage>
+    with SingleTickerProviderStateMixin {
   final controller = SoundboardController();
   List<List<String>> _rows = [];
   Map<String, dynamic> _palette = {};
   final _searchCtrl = TextEditingController();
   final _bankPager = PageController(); // page 0 = bank 1, page 6 = extras (700+)
+  late final TabController _tabController =
+      TabController(length: 2, vsync: this);
   int _pageIndex = 0;
   String _query = '';
   bool _errorExpanded = false;
@@ -84,6 +88,7 @@ class _HomePageState extends State<HomePage> {
   void dispose() {
     _searchCtrl.dispose();
     _bankPager.dispose();
+    _tabController.dispose();
     controller.dispose();
     super.dispose();
   }
@@ -186,28 +191,27 @@ class _HomePageState extends State<HomePage> {
       listenable: Listenable.merge([controller, AppSettings.instance]),
       builder: (context, _) {
         final connected = controller.state == ConnState.connected;
-        return DefaultTabController(
-          length: 2,
-          child: Scaffold(
-            appBar: AppBar(
-              title: const Text('Soundboard Remote'),
-              actions: [
-                _btIcon(connected),
-                _overflowMenu(connected),
-              ],
-              bottom: const TabBar(
-                tabs: [Tab(text: 'Tasten'), Tab(text: 'Liste')],
-              ),
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Soundboard Remote'),
+            actions: [
+              _btIcon(connected),
+              _overflowMenu(connected),
+            ],
+            bottom: TabBar(
+              controller: _tabController,
+              tabs: const [Tab(text: 'Tasten'), Tab(text: 'Liste')],
             ),
-            body: SafeArea(
-              child: TabBarView(
-                // Keep both tabs alive so switching away and back doesn't reset
-                // the swipe page (bank) or the list scroll/search.
-                children: [
-                  KeepAlive(child: _tastenTab(connected)),
-                  KeepAlive(child: _listeTab(connected)),
-                ],
-              ),
+          ),
+          body: SafeArea(
+            child: TabBarView(
+              controller: _tabController,
+              // Keep both tabs alive so switching away and back doesn't reset
+              // the swipe page (bank) or the list scroll/search.
+              children: [
+                KeepAlive(child: _tastenTab(connected)),
+                KeepAlive(child: _listeTab(connected)),
+              ],
             ),
           ),
         );
@@ -222,21 +226,31 @@ class _HomePageState extends State<HomePage> {
       children: [
         _bankSelector(),
         Expanded(
-          // 6 bank pages + 1 "extras" page (700+ app-only tracks).
-          child: PageView.builder(
-            controller: _bankPager,
-            itemCount: 7,
-            onPageChanged: (i) {
-              setState(() => _pageIndex = i);
-              if (i < 6 && controller.activeBank != i + 1) {
-                Haptics.light();
-                controller.setBank(i + 1);
-              } else if (i == 6) {
-                Haptics.light();
+          // 6 bank pages + 1 "extras" page (700+ app-only tracks). Swiping right
+          // past the last page hands off to the "Liste" tab.
+          child: NotificationListener<OverscrollNotification>(
+            onNotification: (n) {
+              if (_pageIndex == 6 && n.overscroll > 0 && n.dragDetails != null) {
+                _tabController.animateTo(1);
+                return true;
               }
+              return false;
             },
-            itemBuilder: (_, i) =>
-                i < 6 ? _grid(connected, i + 1) : _extrasGrid(connected),
+            child: PageView.builder(
+              controller: _bankPager,
+              itemCount: 7,
+              onPageChanged: (i) {
+                setState(() => _pageIndex = i);
+                if (i < 6 && controller.activeBank != i + 1) {
+                  Haptics.light();
+                  controller.setBank(i + 1);
+                } else if (i == 6) {
+                  Haptics.light();
+                }
+              },
+              itemBuilder: (_, i) =>
+                  i < 6 ? _grid(connected, i + 1) : _extrasGrid(connected),
+            ),
           ),
         ),
         _controls(connected),
@@ -434,6 +448,17 @@ class _HomePageState extends State<HomePage> {
         if (hasLast) item('forget', Icons.delete_outline, 'Gerät vergessen'),
         if (connected) item('restart', Icons.restart_alt, 'ESP32 neu starten'),
         const PopupMenuDivider(),
+        CheckedPopupMenuItem<String>(
+          value: 'titles',
+          checked: AppSettings.instance.showTitlesOnKeys,
+          child: const Text('Titel statt Nummern'),
+        ),
+        CheckedPopupMenuItem<String>(
+          value: 'wakelock',
+          checked: AppSettings.instance.keepScreenOn,
+          child: const Text('Bildschirm anlassen'),
+        ),
+        const PopupMenuDivider(),
         item('list', Icons.queue_music, 'Titelliste'),
         item('settings', Icons.settings, 'Einstellungen'),
       ],
@@ -453,6 +478,14 @@ class _HomePageState extends State<HomePage> {
         break;
       case 'restart':
         _confirmReset();
+        break;
+      case 'titles':
+        AppSettings.instance
+            .setShowTitlesOnKeys(!AppSettings.instance.showTitlesOnKeys);
+        break;
+      case 'wakelock':
+        AppSettings.instance
+            .setKeepScreenOn(!AppSettings.instance.keepScreenOn);
         break;
       case 'list':
         Navigator.of(context).push(
