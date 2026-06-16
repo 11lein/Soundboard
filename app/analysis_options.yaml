@@ -21,8 +21,19 @@ linter:
   # `// ignore_for_file: name_of_lint` syntax on the line or in the file
   # producing the lint.
   rules:
-    # avoid_print: false  # Uncomment to disable the `avoid_print` rule
-    # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
+    # Project rules on top of flutter_lints. These match the existing style
+    # (single quotes, heavy use of const) and surface real issues without
+    # changing behaviour. Run `flutter analyze` (and `dart fix --apply`) locally
+    # after enabling, as Flutter/Dart is not part of the CI/web environment.
+    prefer_single_quotes: true
+    prefer_const_constructors: true
+    prefer_const_constructors_in_immutables: true
+    prefer_const_declarations: true
+    prefer_final_locals: true
+    avoid_print: true
+    unnecessary_this: true
+    directives_ordering: true
+    sort_child_properties_last: true
 
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options

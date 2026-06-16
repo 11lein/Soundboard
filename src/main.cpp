@@ -78,6 +78,10 @@ DFPlayerMini_Fast myDFPlayer;
 
 // Read playback state from the BUSY pin (instant) instead of a serial query.
 // BUSY is LOW while a track is playing, HIGH when idle.
+// NOTE: this DFPlayer's BUSY signal is unreliable — it often reads idle ~1 s
+// into a track and flickers. So we only use it for the momentary same-key
+// "stop" toggle below (a missed read just means the toggle no-ops), never as a
+// trustworthy "is something playing" indicator.
 bool isPlaying()
 {
   return digitalRead(BUSY_PIN) == LOW;
@@ -162,7 +166,7 @@ void keypadEvent(KeypadEvent key)
     if (isPlaying() && lastKey == key)
     { // same key pressed again → stop (toggle)
       myDFPlayer.stop();
-      lastKey = 0;
+      lastKey = 0; // clear it so the next press of this key plays again, not stops
     }
     else
     {

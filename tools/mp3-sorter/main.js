@@ -6,7 +6,7 @@ const { execFile } = require("child_process");
 const { promisify } = require("util");
 const { pathToFileURL } = require("url");
 const { existsSync } = require("fs");
-const naming = require("./lib/naming");
+const { safeJoin } = require("./lib/safe-path");
 const keyColors = require("./lib/key-colors.json");
 const mm = require("music-metadata");
 
@@ -122,8 +122,10 @@ ipcMain.on("get-colors", (e) => {
 });
 
 // --- IPC: cross-platform file:// URL for a folder + filename ---
+// safeJoin keeps `name` confined to `folder` (the renderer-supplied name is
+// trusted only as a basename, never as a path that could escape the folder).
 ipcMain.handle("file-url", (_e, folder, name) =>
-  pathToFileURL(path.join(folder, name)).href
+  pathToFileURL(safeJoin(folder, name)).href
 );
 
 // --- IPC: reveal the current folder in the OS file manager ---
@@ -186,7 +188,7 @@ ipcMain.handle("copy-into", async (_e, folder, paths) => {
   let copied = 0;
   for (const p of paths) {
     if (!p || !p.toLowerCase().endsWith(".mp3")) continue;
-    const dest = path.join(folder, path.basename(p));
+    const dest = safeJoin(folder, p); // confine the copy target to `folder`
     if (path.resolve(p) === path.resolve(dest)) continue; // already there
     try {
       await fs.copyFile(p, dest);
@@ -220,6 +222,9 @@ ipcMain.handle("save-draft", async (_e, folder, state) => {
 });
 
 // Render an HTML string to an A4-landscape PDF buffer (offscreen).
+// A fresh hidden window is spun up per call. That is a few hundred ms of
+// Chromium startup, but PDF export/preview is a rare, user-triggered action, so
+// pooling a long-lived window would add complexity for no perceptible gain.
 async function htmlToPdf(html) {
   const win = new BrowserWindow({ show: false });
   try {
@@ -379,10 +384,12 @@ ipcMain.handle("apply-renames", async (_e, folder, plan) => {
   const tmpSuffix = `.mp3sorter.tmp.${process.pid}`;
 
   try {
-    // Phase 1: move every changing file to a unique temp name.
+    // Phase 1: move every changing file to a unique temp name. safeJoin guards
+    // the renderer-supplied `from`/`to`; the temp name is generated here, so a
+    // plain join is fine for it.
     for (let i = 0; i < toRename.length; i++) {
       await fs.rename(
-        path.join(folder, toRename[i].from),
+        safeJoin(folder, toRename[i].from),
         path.join(folder, `__${i}${tmpSuffix}`)
       );
     }
@@ -390,7 +397,7 @@ ipcMain.handle("apply-renames", async (_e, folder, plan) => {
     for (let i = 0; i < toRename.length; i++) {
       await fs.rename(
         path.join(folder, `__${i}${tmpSuffix}`),
-        path.join(folder, toRename[i].to)
+        safeJoin(folder, toRename[i].to)
       );
     }
   } catch (err) {
@@ -483,7 +490,7 @@ ipcMain.handle("delete-files", async (_e, folder, names) => {
   const failed = [];
   for (const name of names) {
     try {
-      await fs.unlink(path.join(folder, name));
+      await fs.unlink(safeJoin(folder, name)); // never delete outside `folder`
       deleted.push(name);
     } catch (err) {
       failed.push({ name, error: String(err && err.message ? err.message : err) });
@@ -495,7 +502,7 @@ ipcMain.handle("delete-files", async (_e, folder, names) => {
 // --- IPC: read MP3 duration and bitrate ---
 ipcMain.handle("mp3-info", async (_e, folder, name) => {
   try {
-    const meta = await mm.parseFile(path.join(folder, name), { duration: true });
+    const meta = await mm.parseFile(safeJoin(folder, name), { duration: true });
     const dur = meta.format.duration || 0;
     const br = meta.format.bitrate ? Math.round(meta.format.bitrate / 1000) : null;
     const mins = Math.floor(dur / 60);
@@ -535,9 +542,10 @@ ipcMain.handle("copy-to-card", async (event, srcFolder, targetDir, items, wipeRo
     let copied = 0;
     for (const it of items) {
       if (copyCancelled) return { ok: false, cancelled: true, copied };
+      // Confine both ends: read from srcFolder, write into targetDir, no escape.
       await fs.copyFile(
-        path.join(srcFolder, it.orig),
-        path.join(targetDir, it.name)
+        safeJoin(srcFolder, it.orig),
+        safeJoin(targetDir, it.name)
       );
       copied++;
       event.sender.send("copy-progress", {

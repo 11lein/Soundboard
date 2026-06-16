@@ -127,7 +127,7 @@ class SoundboardController extends ChangeNotifier {
       try {
         alive = await _ch.invokeMethod('isConnected') == true;
       } catch (_) {
-        alive = false;
+        alive = false; // a channel error means the link is not up → treat as down
       }
       if (alive) {
         if (state != ConnState.connected) {
@@ -204,7 +204,7 @@ class SoundboardController extends ChangeNotifier {
       name = (m['name'] ?? '').toString();
       address = (m['address'] ?? '').toString();
     } catch (_) {
-      return;
+      return; // corrupt stored entry → nothing valid to auto-reconnect to
     }
     if (address.isEmpty) return;
     // Don't pop a permission dialog on launch: only auto-reconnect if the user

@@ -7,14 +7,18 @@
     "start": "electron .",
     "test": "node --test \"test/**/*.test.js\"",
     "test:smoke": "electron test/smoke.js",
+    "lint": "eslint .",
     "dist": "electron-builder"
   },
   "author": "Ronny Elflein",
   "license": "MIT",
   "devDependencies": {
+    "@eslint/js": "^9.0.0",
     "electron": "^33.0.0",
     "electron-builder": "^25.0.0",
-    "electron-reloader": "^1.2.3"
+    "electron-reloader": "^1.2.3",
+    "eslint": "^9.0.0",
+    "globals": "^15.0.0"
   },
   "build": {
     "appId": "de.11lein.mp3sorter",
