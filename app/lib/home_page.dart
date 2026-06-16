@@ -384,9 +384,6 @@ class _HomePageState extends State<HomePage> {
                           const Divider(height: 1, color: Colors.white12),
                       itemBuilder: (context, i) {
                         final t = filtered[i];
-                        final bank = t.n ~/ 100;
-                        final pos = t.n % 100;
-                        final extra = t.n >= 700; // parked: app-only, no hw key
                         final playing = controller.playingTrack == t.n;
                         return _PlayPulse(
                           active: playing,
@@ -404,13 +401,6 @@ class _HomePageState extends State<HomePage> {
                                   fontSize: 16),
                             ),
                             title: Text(t.title),
-                            subtitle: Text(
-                              extra
-                                  ? 'Nur App · kein Hardware-Knopf'
-                                  : 'Bank $bank · Taste ${pos.toString().padLeft(2, '0')}',
-                              style: const TextStyle(
-                                  color: Colors.white54, fontSize: 11),
-                            ),
                             trailing: Icon(
                               playing ? Icons.graphic_eq : Icons.play_arrow,
                               color: playing ? Colors.orangeAccent : null,

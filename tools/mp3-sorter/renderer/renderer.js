@@ -22,6 +22,7 @@ const el = {
   folderPath: document.getElementById("folder-path"),
   status: document.getElementById("status"),
   openBtn: document.getElementById("open-btn"),
+  refreshBtn: document.getElementById("refresh-btn"),
   renameBtn: document.getElementById("rename-btn"),
   listBtn: document.getElementById("list-btn"),
   listImportBtn: document.getElementById("list-import-btn"),
@@ -445,6 +446,7 @@ function updateToolbar() {
   el.commitBtn.disabled = !state.folder || (renames === 0 && state.trash.length === 0);
   el.previewBtn.disabled = n === 0;
   el.pdfBtn.disabled = n === 0;
+  el.refreshBtn.disabled = !state.folder;
   el.renameBtn.disabled = n === 0;
   el.listBtn.disabled = n === 0; // export includes parked (700+) too
   el.listImportBtn.disabled = state.slots.filter(Boolean).length === 0;
@@ -517,6 +519,16 @@ function draftFromState() {
 el.openBtn.addEventListener("click", async () => {
   const folder = await api.pickFolder();
   if (folder) await loadFolder(folder);
+});
+
+// Re-read the current folder from disk (picks up added/removed files) while
+// keeping the current arrangement.
+el.refreshBtn.addEventListener("click", async () => {
+  if (!state.folder) return;
+  el.status.textContent = "Aktualisiere…";
+  await reloadKeepingModel();
+  el.status.textContent = "Aktualisiert ✔";
+  setTimeout(render, 1000);
 });
 
 el.saveDraftBtn.addEventListener("click", async () => {
@@ -910,6 +922,16 @@ el.dropZone.addEventListener("drop", async (e) => {
     await loadFolder(mp3s[0].dir);
   }
 });
+
+// On startup, reopen the folder that was open last time (if it still exists).
+(async () => {
+  try {
+    const last = await api.getLastFolder();
+    if (last && !state.folder) await loadFolder(last);
+  } catch {
+    /* ignore – just start empty */
+  }
+})();
 
 // Test hook (used by the headless capture/smoke scripts; harmless in normal use).
 window.__sbTest = {

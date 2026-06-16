@@ -13,6 +13,24 @@ const execFileP = promisify(execFile);
 
 const DRAFT_FILE = ".mp3sorter.json"; // intermediate state, lives in the folder
 
+// App config (remembers the last opened folder across launches).
+const CONFIG_FILE = path.join(app.getPath("userData"), "mp3sorter-config.json");
+async function readConfig() {
+  try {
+    return JSON.parse(await fs.readFile(CONFIG_FILE, "utf8"));
+  } catch {
+    return {};
+  }
+}
+async function writeConfig(patch) {
+  const cfg = { ...(await readConfig()), ...patch };
+  try {
+    await fs.writeFile(CONFIG_FILE, JSON.stringify(cfg, null, 2), "utf8");
+  } catch {
+    /* ignore – config is best-effort */
+  }
+}
+
 // 2D-only UI: no GPU needed. Disabling HW acceleration avoids harmless but noisy
 // "GetVSyncParametersIfAvailable() failed" GL warnings on Linux/VMs.
 app.disableHardwareAcceleration();
@@ -62,12 +80,25 @@ ipcMain.handle("pick-folder", async () => {
   return res.filePaths[0];
 });
 
-// --- IPC: list .mp3 files in a folder ---
+// --- IPC: list .mp3 files in a folder (also remembers it as the last folder) ---
 ipcMain.handle("list-mp3", async (_e, folder) => {
   const entries = await fs.readdir(folder, { withFileTypes: true });
+  writeConfig({ lastFolder: folder }); // remember for next launch
   return entries
     .filter((d) => d.isFile() && d.name.toLowerCase().endsWith(".mp3"))
     .map((d) => d.name);
+});
+
+// --- IPC: the last opened folder (if it still exists) ---
+ipcMain.handle("get-last-folder", async () => {
+  const cfg = await readConfig();
+  if (!cfg.lastFolder) return null;
+  try {
+    const st = await fs.stat(cfg.lastFolder);
+    return st.isDirectory() ? cfg.lastFolder : null;
+  } catch {
+    return null;
+  }
 });
 
 // --- IPC: inspect dropped paths (file vs directory) ---

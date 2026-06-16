@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld("api", {
   fileUrl: (folder, name) => ipcRenderer.invoke("file-url", folder, name),
   pickFolder: () => ipcRenderer.invoke("pick-folder"),
   listMp3: (folder) => ipcRenderer.invoke("list-mp3", folder),
+  getLastFolder: () => ipcRenderer.invoke("get-last-folder"),
   loadDraft: (folder) => ipcRenderer.invoke("load-draft", folder),
   saveDraft: (folder, state) => ipcRenderer.invoke("save-draft", folder, state),
   applyRenames: (folder, plan) =>
