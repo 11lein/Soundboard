@@ -5,11 +5,53 @@ const os = require("os");
 const { execFile } = require("child_process");
 const { promisify } = require("util");
 const { pathToFileURL } = require("url");
+const { existsSync } = require("fs");
 const naming = require("./lib/naming");
 const keyColors = require("./lib/key-colors.json");
 const mm = require("music-metadata");
 
 const execFileP = promisify(execFile);
+
+// Locate the `adb` binary: PATH often misses it when launched from the desktop,
+// so also check the usual Android SDK locations.
+function resolveAdb() {
+  const exe = process.platform === "win32" ? "adb.exe" : "adb";
+  const home = os.homedir();
+  const sdk = process.env.ANDROID_HOME || process.env.ANDROID_SDK_ROOT;
+  const candidates = [
+    sdk && path.join(sdk, "platform-tools", exe),
+    path.join(home, "Android", "Sdk", "platform-tools", exe),
+    path.join(home, "Library", "Android", "sdk", "platform-tools", exe),
+    process.env.LOCALAPPDATA &&
+      path.join(process.env.LOCALAPPDATA, "Android", "Sdk", "platform-tools", exe),
+  ].filter(Boolean);
+  for (const c of candidates) {
+    try {
+      if (existsSync(c)) return c;
+    } catch {
+      /* ignore */
+    }
+  }
+  return exe; // fall back to PATH
+}
+
+// Make sure an adb device is available; if none (common with Wi-Fi debugging,
+// which needs an explicit connect), try to auto-connect one via mDNS.
+async function ensureAdbDevice(adb) {
+  try {
+    const { stdout } = await execFileP(adb, ["devices"]);
+    if (/\n\S+\s+device\b/.test(stdout)) return; // a device is already attached
+  } catch {
+    return; // adb itself failed – let the caller surface the error
+  }
+  try {
+    const { stdout } = await execFileP(adb, ["mdns", "services"]);
+    const m = stdout.match(/_adb-tls-connect\._tcp\.?\s+(\d+\.\d+\.\d+\.\d+:\d+)/);
+    if (m) await execFileP(adb, ["connect", m[1]]);
+  } catch {
+    /* no wireless device discoverable – the push/pull will report it */
+  }
+}
 
 const DRAFT_FILE = ".mp3sorter.json"; // intermediate state, lives in the folder
 
@@ -241,13 +283,17 @@ ipcMain.handle("adb-push-list", async (_e, json) => {
   const tmp = path.join(os.tmpdir(), `soundboard-list-${Date.now()}.json`);
   try {
     await fs.writeFile(tmp, json, "utf8");
-    await execFileP("adb", ["push", tmp, APP_LIST_ON_DEVICE]);
+    const adb = resolveAdb();
+    await ensureAdbDevice(adb);
+    await execFileP(adb, ["push", tmp, APP_LIST_ON_DEVICE]);
     return { ok: true };
   } catch (err) {
     const msg =
       err && err.code === "ENOENT"
-        ? "adb nicht gefunden – Android-Platform-Tools im PATH? Handy per (WLAN-)ADB verbunden?"
-        : String(err && err.message ? err.message : err);
+        ? "adb nicht gefunden – Android-Platform-Tools installiert / im PATH?"
+        : (err && (err.stderr || err.message)
+            ? String(err.stderr || err.message).trim()
+            : "ADB-Fehler") + " (Handy per (WLAN-)ADB verbunden?)";
     return { ok: false, error: msg };
   } finally {
     fs.unlink(tmp).catch(() => {});
@@ -260,7 +306,9 @@ const APP_LIST_FROM_DEVICE =
 ipcMain.handle("adb-pull-list", async () => {
   const tmp = path.join(os.tmpdir(), `soundboard-pull-${Date.now()}.json`);
   try {
-    await execFileP("adb", ["pull", APP_LIST_FROM_DEVICE, tmp]);
+    const adb = resolveAdb();
+    await ensureAdbDevice(adb);
+    await execFileP(adb, ["pull", APP_LIST_FROM_DEVICE, tmp]);
     const data = JSON.parse(await fs.readFile(tmp, "utf8"));
     if (!data || !Array.isArray(data.tracks)) {
       return { ok: false, error: "Keine gültige Liste auf dem Handy." };

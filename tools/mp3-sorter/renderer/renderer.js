@@ -628,9 +628,11 @@ function listExportPrompt() {
       <div class="dialog">
         <h3>Liste exportieren</h3>
         <p class="muted">Ziel(e) wählen:</p>
-        <label class="cb"><input type="checkbox" id="le-app" checked> 📱 App-Verzeichnis (nächster App-Build)</label>
-        <label class="cb"><input type="checkbox" id="le-adb"> 📲 Aufs Handy (ADB, ohne Build)</label>
-        <label class="cb"><input type="checkbox" id="le-file"> 💾 In Datei speichern…</label>
+        <div class="opt-col">
+          <label class="cb"><input type="checkbox" id="le-app" checked> 📱 App-Verzeichnis (nächster App-Build)</label>
+          <label class="cb"><input type="checkbox" id="le-adb"> 📲 Aufs Handy (ADB, ohne Build)</label>
+          <label class="cb"><input type="checkbox" id="le-file"> 💾 In Datei speichern…</label>
+        </div>
         <div class="dialog-buttons">
           <button id="le-cancel" class="link">Abbrechen</button>
           <button id="le-ok" class="primary">Exportieren</button>
