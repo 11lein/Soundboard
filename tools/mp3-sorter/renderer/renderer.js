@@ -1029,8 +1029,15 @@ async function copyToCard(mount, items, driveToFormat) {
     }
   }
   const targetDir = mount.replace(/[\\/]+$/, "") + "/MP3";
-  el.status.textContent = "Kopiere auf SD-Karte…";
-  const res = await api.copyToCard(state.folder, targetDir, items);
+  const prog = showCopyProgress(items.length);
+  const off = api.onCopyProgress((d) => prog.update(d));
+  let res;
+  try {
+    res = await api.copyToCard(state.folder, targetDir, items);
+  } finally {
+    off();
+    prog.close();
+  }
   if (res.ok) {
     el.status.textContent = `✅ ${res.copied} Dateien nach ${targetDir} kopiert`;
     // Offer to push the matching title list onto the phone via ADB.
@@ -1044,10 +1051,51 @@ async function copyToCard(mount, items, driveToFormat) {
         ? `✅ ${res.copied} Dateien kopiert · Liste aufs Handy geschoben`
         : `✅ ${res.copied} Dateien kopiert (ADB-Fehler: ${r && r.error})`;
     }
+  } else if (res.cancelled) {
+    el.status.textContent = `Abgebrochen – ${res.copied} von ${items.length} Dateien kopiert`;
   } else {
     el.status.textContent = "";
     alert("Kopieren fehlgeschlagen: " + res.error);
   }
+}
+
+// Blocking progress overlay for the SD-card copy (with %, elapsed time, cancel).
+function showCopyProgress(total) {
+  const start = Date.now();
+  const overlay = document.createElement("div");
+  overlay.className = "overlay";
+  overlay.innerHTML = `
+    <div class="dialog">
+      <h3>Auf SD-Karte kopieren…</h3>
+      <div class="progress-track"><div class="progress-bar" id="cp-bar"></div></div>
+      <p id="cp-text" class="muted">0 / ${total} (0 %)</p>
+      <p id="cp-file" class="muted" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></p>
+      <div class="dialog-buttons">
+        <button id="cp-cancel" class="danger">Abbrechen</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  const bar = overlay.querySelector("#cp-bar");
+  const text = overlay.querySelector("#cp-text");
+  const file = overlay.querySelector("#cp-file");
+  const cancelBtn = overlay.querySelector("#cp-cancel");
+  cancelBtn.onclick = () => {
+    cancelBtn.disabled = true;
+    cancelBtn.textContent = "Breche ab…";
+    api.cancelCopy();
+  };
+  return {
+    update({ done, total, name }) {
+      const pct = total ? Math.round((done / total) * 100) : 0;
+      const secs = Math.round((Date.now() - start) / 1000);
+      bar.style.width = pct + "%";
+      text.textContent = `${done} / ${total} (${pct} %) · ${secs}s`;
+      file.textContent = name || "";
+    },
+    close() {
+      overlay.remove();
+    },
+  };
 }
 
 // ---------- External drag & drop (load folder / add files) ----------

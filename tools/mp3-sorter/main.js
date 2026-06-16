@@ -506,19 +506,30 @@ ipcMain.handle("mp3-info", async (_e, folder, name) => {
   }
 });
 
-// --- IPC: copy files to the SD card ---
+// --- IPC: copy files to the SD card (with progress + cancel) ---
 // srcFolder: source folder; targetDir: destination (e.g. card mount + /MP3)
 // items: [{ orig (source filename), name (target filename) }]
-ipcMain.handle("copy-to-card", async (_e, srcFolder, targetDir, items) => {
+let copyCancelled = false;
+ipcMain.handle("cancel-copy", () => {
+  copyCancelled = true;
+});
+ipcMain.handle("copy-to-card", async (event, srcFolder, targetDir, items) => {
+  copyCancelled = false;
   try {
     await fs.mkdir(targetDir, { recursive: true });
     let copied = 0;
     for (const it of items) {
+      if (copyCancelled) return { ok: false, cancelled: true, copied };
       await fs.copyFile(
         path.join(srcFolder, it.orig),
         path.join(targetDir, it.name)
       );
       copied++;
+      event.sender.send("copy-progress", {
+        done: copied,
+        total: items.length,
+        name: it.name,
+      });
     }
     return { ok: true, copied };
   } catch (err) {

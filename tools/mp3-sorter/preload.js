@@ -16,6 +16,12 @@ contextBridge.exposeInMainWorld("api", {
   formatDrive: (drive) => ipcRenderer.invoke("format-drive", drive),
   copyToCard: (srcFolder, targetDir, items) =>
     ipcRenderer.invoke("copy-to-card", srcFolder, targetDir, items),
+  cancelCopy: () => ipcRenderer.invoke("cancel-copy"),
+  onCopyProgress: (cb) => {
+    const listener = (_e, data) => cb(data);
+    ipcRenderer.on("copy-progress", listener);
+    return () => ipcRenderer.removeListener("copy-progress", listener);
+  },
   inspectPaths: (paths) => ipcRenderer.invoke("inspect-paths", paths),
   copyInto: (folder, paths) => ipcRenderer.invoke("copy-into", folder, paths),
   exportPdf: (html) => ipcRenderer.invoke("export-pdf", html),
