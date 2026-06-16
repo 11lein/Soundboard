@@ -1,12 +1,10 @@
 import 'dart:convert';
-import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'app_settings.dart';
 import 'haptics.dart';
+import 'list_page.dart';
 import 'settings_page.dart';
-import 'package:file_picker/file_picker.dart';
 import 'soundboard_controller.dart';
 
 class HomePage extends StatefulWidget {
@@ -93,7 +91,9 @@ class _HomePageState extends State<HomePage> {
       if (chunk.isEmpty) continue;
       if (cur.isEmpty) {
         cur = chunk;
-      } else if (cur.length + chunk.length <= 12) {
+      } else if (cur.length < 6 && cur.length + chunk.length <= 12) {
+        // Only keep merging while the line is still short; once it reaches ~6
+        // characters, break at the next opportunity (shorter, tidier lines).
         cur += chunk;
       } else {
         if (lines.length >= 3) {
@@ -304,59 +304,40 @@ class _HomePageState extends State<HomePage> {
             .toList();
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.all(8),
-          child: Row(
-            children: [
-              FilledButton.icon(
-                onPressed: _importList,
-                icon: const Icon(Icons.file_open, size: 18),
-                label: const Text('Import'),
-              ),
-              if (list.isNotEmpty) ...[
-                const SizedBox(width: 6),
-                OutlinedButton.icon(
-                  onPressed: _exportList,
-                  icon: const Icon(Icons.save_alt, size: 18),
-                  label: const Text('Export'),
+        if (list.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchCtrl,
+                    decoration: InputDecoration(
+                      isDense: true,
+                      prefixIcon: const Icon(Icons.search, size: 20),
+                      hintText: 'Titel oder Nummer suchen…',
+                      border: const OutlineInputBorder(),
+                      suffixIcon: _query.isEmpty
+                          ? null
+                          : IconButton(
+                              icon: const Icon(Icons.clear, size: 20),
+                              onPressed: _searchCtrl.clear,
+                            ),
+                    ),
+                  ),
                 ),
-              ],
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  controller.listImportedAt != null
-                      ? '${list.length} Titel'
-                      : 'Keine Liste',
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
-                  textAlign: TextAlign.end,
-                ),
-              ),
-              if (list.isNotEmpty)
-                IconButton(
+                const SizedBox(width: 8),
+                IconButton.filled(
                   tooltip: 'Stop',
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.red.shade700,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(48, 48),
+                  ),
                   onPressed: connected ? controller.stop : null,
                   icon: const Icon(Icons.stop),
                 ),
-            ],
-          ),
-        ),
-        if (list.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-            child: TextField(
-              controller: _searchCtrl,
-              decoration: InputDecoration(
-                isDense: true,
-                prefixIcon: const Icon(Icons.search, size: 20),
-                hintText: 'Titel oder Nummer suchen…',
-                border: const OutlineInputBorder(),
-                suffixIcon: _query.isEmpty
-                    ? null
-                    : IconButton(
-                        icon: const Icon(Icons.clear, size: 20),
-                        onPressed: _searchCtrl.clear,
-                      ),
-              ),
+              ],
             ),
           ),
         Expanded(
@@ -365,8 +346,8 @@ class _HomePageState extends State<HomePage> {
                   child: Padding(
                     padding: EdgeInsets.all(24),
                     child: Text(
-                      'Noch keine Liste importiert.\n\nIm Sorter „📋 Liste" exportieren, '
-                      'die JSON-Datei aufs Handy übertragen und hier importieren.',
+                      'Noch keine Liste importiert.\n\nÜber das ⋮-Menü → „Titelliste" '
+                      'kannst du eine im Sorter exportierte JSON importieren.',
                       textAlign: TextAlign.center,
                       style: TextStyle(color: Colors.white60),
                     ),
@@ -422,49 +403,6 @@ class _HomePageState extends State<HomePage> {
         ),
       ],
     );
-  }
-
-  Future<void> _importList() async {
-    final res = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['json'],
-      withData: true,
-    );
-    if (res == null || res.files.isEmpty) return;
-    final f = res.files.first;
-    String? content;
-    if (f.bytes != null) {
-      content = utf8.decode(f.bytes!);
-    } else if (f.path != null) {
-      content = await File(f.path!).readAsString();
-    }
-    if (content == null) return;
-    final n = await controller.importListFromJson(content);
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(n >= 0 ? '$n Titel importiert' : 'Ungültige Listendatei'),
-    ));
-  }
-
-  // Export the (possibly edited) list as JSON, in the same format the sorter
-  // uses – so it can be re-imported there for file renaming.
-  Future<void> _exportList() async {
-    final d = DateTime.now();
-    String two(int x) => x.toString().padLeft(2, '0');
-    final ts =
-        '${d.year}-${two(d.month)}-${two(d.day)}_${two(d.hour)}-${two(d.minute)}-${two(d.second)}';
-    final bytes = Uint8List.fromList(utf8.encode(controller.exportJson()));
-    final path = await FilePicker.platform.saveFile(
-      dialogTitle: 'Liste exportieren',
-      fileName: 'soundboard-liste_$ts.json',
-      type: FileType.custom,
-      allowedExtensions: ['json'],
-      bytes: bytes,
-    );
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(path != null ? 'Liste exportiert' : 'Export abgebrochen'),
-    ));
   }
 
   // Long-press a list entry → edit its title (persisted, re-exportable).
@@ -545,6 +483,7 @@ class _HomePageState extends State<HomePage> {
         if (hasLast) item('forget', Icons.delete_outline, 'Gerät vergessen'),
         if (connected) item('restart', Icons.restart_alt, 'ESP32 neu starten'),
         const PopupMenuDivider(),
+        item('list', Icons.queue_music, 'Titelliste'),
         item('settings', Icons.settings, 'Einstellungen'),
       ],
     );
@@ -563,6 +502,11 @@ class _HomePageState extends State<HomePage> {
         break;
       case 'restart':
         _confirmReset();
+        break;
+      case 'list':
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => ListPage(controller: controller)),
+        );
         break;
       case 'settings':
         Navigator.of(context).push(
@@ -729,33 +673,44 @@ class _HomePageState extends State<HomePage> {
             _showKeyAssignments(pos, connected);
           },
           child: Container(
-            alignment: Alignment.center,
-            padding: const EdgeInsets.all(4),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: title != null
-                  ? Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(_wrapKeyTitle(title),
-                            textAlign: TextAlign.center,
-                            maxLines: 3,
-                            style: const TextStyle(
-                                color: Colors.black87,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12,
-                                height: 1.1)),
-                        Text('$track',
-                            style: const TextStyle(
-                                color: Colors.black54, fontSize: 9)),
-                      ],
-                    )
-                  : Text('$track',
-                      style: const TextStyle(
-                          color: Colors.black87,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16)),
-            ),
+            padding: const EdgeInsets.all(3),
+            child: title != null
+                // Title scales to fit; the number stays a fixed, uniform size.
+                ? Column(
+                    children: [
+                      Expanded(
+                        child: Center(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(_wrapKeyTitle(title),
+                                textAlign: TextAlign.center,
+                                maxLines: 3,
+                                style: const TextStyle(
+                                    color: Colors.black87,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12,
+                                    height: 1.1)),
+                          ),
+                        ),
+                      ),
+                      Text('$track',
+                          style: const TextStyle(
+                              color: Colors.black54,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600)),
+                    ],
+                  )
+                // Number only: one fixed size for every tile.
+                : Center(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text('$track',
+                          style: const TextStyle(
+                              color: Colors.black87,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18)),
+                    ),
+                  ),
           ),
         ),
       ),

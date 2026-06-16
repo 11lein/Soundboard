@@ -120,10 +120,10 @@ Zahl (mit `\n`) an das Gerät `das_11lein` senden. Die Tracknummer enthält die 
 | Eingabe | Aktion |
 |---------|--------|
 | `101`–`624` | Track direkt abspielen (z. B. `305` = Bank 3, Taste E) |
+| `700`–`6999` | Zusatz-/Parkplatz-Track (`0700`…), nur über die App, kein Hardware-Knopf |
+| `7000`–`7100` | Lautstärke auf `(Wert−7000)` Prozent setzen (0–100 %) |
 | `9999` | Stop |
-| `9998` | Lautstärke 10 |
-| `9997` | Lautstärke 20 |
-| `9996` | Lautstärke 30 (max) |
+| `9998` / `9997` / `9996` | Lautstärke 33 / 67 / 100 % (Kompatibilität) |
 | `9995` | Neustart |
 
 > Die Befehlscodes liegen bei `9999` absteigend – weit über jeder Tracknummer, daher keine Kollision.

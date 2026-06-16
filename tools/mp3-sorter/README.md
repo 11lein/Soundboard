@@ -28,12 +28,21 @@ Soundboard-MP3s per **Drag & Drop**. Die Dateien werden für das DFPlayer-Schema
   Eine **2-Spalten-Vorschau** zeigt nur die betroffenen Dateien zum Bestätigen.
 - ⚡ **Quick-Rename:** **Doppelklick** auf einen Titel benennt ihn direkt inline
   um (Enter = speichern, Esc = abbrechen).
-- 📋 **Liste exportieren:** Schreibt die platzierten Titel als JSON
-  (`soundboard-liste_JJJJ-MM-TT_HH-MM-SS.json`, Nummer → Titel) – zum Import in
-  die Smartphone-App (Tab „Liste").
+- 🗑️ **Papierkorb:** Eine Kachel unten; hierhin gezogene Dateien werden beim
+  **Final speichern** von der Festplatte gelöscht (mit ↩ Wiederherstellen je Eintrag).
+- ⏱️ **Hover-Info:** Beim Überfahren einer Zeile werden **Dauer und Bitrate** der MP3 angezeigt.
+- 📋 **Liste exportieren:** Schreibt platzierte **und geparkte** Titel als JSON
+  (`soundboard-liste_…json`, Nummer → Titel) – zum Import in die App. Parkplätze
+  bekommen dabei alphabetisch die Nummern **`700`+** (nur in der App nutzbar).
+- 📥 **Liste importieren:** Lädt eine (in der App bearbeitete) Titel-JSON und
+  überträgt die Titel auf die Dateien der passenden Slots – das anschließende
+  **Final speichern** benennt entsprechend um (Round-Trip App ⇄ Sorter).
 - 💳 **Auf SD-Karte schieben:** Wechseldatenträger auswählen, optional **vorher
-  formatieren** (mit Nachfrage; sofern das OS es unterstützt), dann die geprefixten
-  Dateien in den `MP3/`-Ordner der Karte kopieren.
+  formatieren** (mit Nachfrage; sofern das OS es unterstützt), dann die Dateien in
+  den `MP3/`-Ordner der Karte kopieren – platzierte als `0101_…`, geparkte als `0700_…`.
+- 🔄 **Aktualisieren:** Liest den aktuellen Ordner neu von der Platte (neue/entfernte
+  Dateien) und behält die Anordnung. Der **zuletzt geöffnete Ordner** wird gemerkt
+  und beim Start automatisch wieder geöffnet.
 - ▶️ **Vorhören:** Play-Knopf pro Zeile, der während der Wiedergabe zur Pause
   wird. Ein anderer Sound stoppt alle übrigen und setzt sie auf 0 s zurück – nur
   der aktuelle Titel merkt sich seine Pause.
