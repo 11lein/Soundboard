@@ -20,30 +20,55 @@ class ListPage extends StatefulWidget {
 class _ListPageState extends State<ListPage> {
   SoundboardController get c => widget.controller;
 
-  // The list bundled with the app (written by the sorter on export, baked in at
-  // build time). null while loading; count 0 means "none bundled".
-  String? _bundledJson;
-  int _bundledCount = 0;
-  String? _bundledExported;
+  // The freshest list available without a file picker: a list pushed by the
+  // sorter via ADB into the app's data dir (no rebuild) is preferred; otherwise
+  // the one bundled into the app at build time. null = none.
+  String? _latestJson;
+  int _latestCount = 0;
+  String? _latestExported;
+  String _latestSource = '';
 
   @override
   void initState() {
     super.initState();
-    _loadBundled();
+    _loadLatest();
   }
 
-  Future<void> _loadBundled() async {
+  Future<void> _loadLatest() async {
+    // 1) ADB-pushed list in the app's external files dir (newest, no rebuild).
+    try {
+      final dir = await getExternalStorageDirectory();
+      if (dir != null) {
+        final f = File('${dir.path}/tracklist.json');
+        if (await f.exists()) {
+          final raw = await f.readAsString();
+          if (_useIfNonEmpty(raw, 'per ADB übertragen')) return;
+        }
+      }
+    } catch (_) {/* fall through to the bundled list */}
+    // 2) List bundled with the app at build time.
     try {
       final raw = await rootBundle.loadString('assets/tracklist.json');
+      _useIfNonEmpty(raw, 'mit der App gebaut');
+    } catch (_) {
+      setState(() => _latestJson = null);
+    }
+  }
+
+  bool _useIfNonEmpty(String raw, String source) {
+    try {
       final data = jsonDecode(raw) as Map<String, dynamic>;
       final tracks = (data['tracks'] as List?) ?? [];
+      if (tracks.isEmpty) return false;
       setState(() {
-        _bundledJson = tracks.isEmpty ? null : raw;
-        _bundledCount = tracks.length;
-        _bundledExported = data['exported'] as String?;
+        _latestJson = raw;
+        _latestCount = tracks.length;
+        _latestExported = data['exported'] as String?;
+        _latestSource = source;
       });
+      return true;
     } catch (_) {
-      setState(() => _bundledJson = null);
+      return false;
     }
   }
 
@@ -69,26 +94,6 @@ class _ListPageState extends State<ListPage> {
       content = await File(f.path!).readAsString();
     }
     if (content != null) await _previewAndImport(content);
-  }
-
-  // Load a list pushed via ADB into the app's external files dir – no rebuild:
-  //   adb push tracklist.json /sdcard/Android/data/de.lein11.soundboard_remote/files/tracklist.json
-  Future<void> _importFromDevice() async {
-    try {
-      final dir = await getExternalStorageDirectory();
-      if (dir == null) {
-        _toast('Kein App-Speicher verfügbar');
-        return;
-      }
-      final f = File('${dir.path}/tracklist.json');
-      if (!await f.exists()) {
-        _toast('Keine per ADB übertragene Liste gefunden');
-        return;
-      }
-      await _previewAndImport(await f.readAsString());
-    } catch (e) {
-      _toast('Fehler: $e');
-    }
   }
 
   Future<void> _export() async {
@@ -194,7 +199,7 @@ class _ListPageState extends State<ListPage> {
       builder: (context, _) {
         final count = c.tracklist.length;
         final hasList = count > 0;
-        final hasBundled = _bundledJson != null && _bundledCount > 0;
+        final hasLatest = _latestJson != null && _latestCount > 0;
         return Scaffold(
           appBar: AppBar(title: const Text('Titelliste')),
           body: ListView(
@@ -204,27 +209,19 @@ class _ListPageState extends State<ListPage> {
                 title: Text(hasList ? '$count Titel geladen' : 'Keine Liste geladen'),
                 subtitle: Text(c.listImportedAt != null
                     ? 'Wird in der Liste und (optional) auf den Tasten angezeigt'
-                    : 'Mitgelieferte Liste übernehmen oder Datei importieren'),
+                    : 'Neueste Liste übernehmen oder Datei importieren'),
               ),
               const Divider(),
               ListTile(
-                leading: const Icon(Icons.smartphone),
-                title: const Text('Mitgelieferte Liste übernehmen'),
-                subtitle: Text(hasBundled
-                    ? '$_bundledCount Titel'
-                        '${_bundledExported != null ? ' · exportiert ${_fmtDate(_bundledExported!)}' : ''}'
-                    : 'Keine Liste mit der App mitgeliefert'),
+                leading: const Icon(Icons.playlist_add_check),
+                title: const Text('Neueste Liste übernehmen'),
+                subtitle: Text(hasLatest
+                    ? '$_latestCount Titel · $_latestSource'
+                        '${_latestExported != null ? ' · ${_fmtDate(_latestExported!)}' : ''}'
+                    : 'Keine Liste verfügbar (im Sorter exportieren)'),
                 trailing: const Icon(Icons.chevron_right),
-                enabled: hasBundled,
-                onTap: hasBundled ? () => _previewAndImport(_bundledJson!) : null,
-              ),
-              ListTile(
-                leading: const Icon(Icons.usb),
-                title: const Text('Per ADB übertragene Liste'),
-                subtitle: const Text(
-                    'adb push … /Android/data/de.lein11.soundboard_remote/files/tracklist.json'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: _importFromDevice,
+                enabled: hasLatest,
+                onTap: hasLatest ? () => _previewAndImport(_latestJson!) : null,
               ),
               ListTile(
                 leading: const Icon(Icons.file_open),

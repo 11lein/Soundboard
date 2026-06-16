@@ -618,8 +618,8 @@ function listFileName() {
   const ts = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}_${p(d.getHours())}-${p(d.getMinutes())}-${p(d.getSeconds())}`;
   return `soundboard-liste_${ts}.json`;
 }
-// Ask where the exported list should go: into the app's assets (for the next
-// app build), to a chosen file, or both.
+// Ask where the exported list should go (any combination): app assets (for the
+// next build), straight onto the phone via ADB (no build), and/or a file.
 function listExportPrompt() {
   return new Promise((resolve) => {
     const overlay = document.createElement("div");
@@ -627,38 +627,48 @@ function listExportPrompt() {
     overlay.innerHTML = `
       <div class="dialog">
         <h3>Liste exportieren</h3>
-        <p class="muted">Wohin soll die Titelliste?</p>
+        <p class="muted">Ziel(e) wählen:</p>
+        <label class="cb"><input type="checkbox" id="le-app" checked> 📱 App-Verzeichnis (nächster App-Build)</label>
+        <label class="cb"><input type="checkbox" id="le-adb"> 📲 Aufs Handy (ADB, ohne Build)</label>
+        <label class="cb"><input type="checkbox" id="le-file"> 💾 In Datei speichern…</label>
         <div class="dialog-buttons">
-          <button id="le-app" class="primary">📱 App-Verzeichnis</button>
-          <button id="le-file">💾 Speichern unter…</button>
-          <button id="le-both">Beides</button>
+          <button id="le-cancel" class="link">Abbrechen</button>
+          <button id="le-ok" class="primary">Exportieren</button>
         </div>
-        <button id="le-cancel" class="link">Abbrechen</button>
       </div>`;
     document.body.appendChild(overlay);
     const done = (v) => {
       overlay.remove();
       resolve(v);
     };
-    overlay.querySelector("#le-app").onclick = () => done("app");
-    overlay.querySelector("#le-file").onclick = () => done("file");
-    overlay.querySelector("#le-both").onclick = () => done("both");
-    overlay.querySelector("#le-cancel").onclick = () => done("cancel");
+    overlay.querySelector("#le-cancel").onclick = () => done(null);
+    overlay.querySelector("#le-ok").onclick = () =>
+      done({
+        app: overlay.querySelector("#le-app").checked,
+        adb: overlay.querySelector("#le-adb").checked,
+        file: overlay.querySelector("#le-file").checked,
+      });
   });
 }
 
 el.listBtn.addEventListener("click", async () => {
   if (!countFiles()) return;
-  const where = await listExportPrompt();
-  if (where === "cancel") return;
+  const sel = await listExportPrompt();
+  if (!sel || (!sel.app && !sel.adb && !sel.file)) return;
   const json = buildTrackListJson();
   const msgs = [];
-  if (where === "app" || where === "both") {
+  if (sel.app) {
     const r = await api.saveAppList(json);
     if (r && r.ok) msgs.push("App-Verzeichnis ✔");
     else if (r && r.error) alert("App-Verzeichnis-Fehler: " + r.error);
   }
-  if (where === "file" || where === "both") {
+  if (sel.adb) {
+    el.status.textContent = "Schiebe per ADB…";
+    const r = await api.adbPushList(json);
+    if (r && r.ok) msgs.push("aufs Handy (ADB) ✔");
+    else if (r && r.error) alert("ADB-Fehler: " + r.error);
+  }
+  if (sel.file) {
     const r = await api.exportList(listFileName(), json);
     if (r && r.ok) msgs.push("Datei: " + r.path);
     else if (r && r.error) alert("Datei-Fehler: " + r.error);
@@ -923,8 +933,20 @@ async function copyToCard(mount, items, driveToFormat) {
   const targetDir = mount.replace(/[\\/]+$/, "") + "/MP3";
   el.status.textContent = "Kopiere auf SD-Karte…";
   const res = await api.copyToCard(state.folder, targetDir, items);
-  if (res.ok) el.status.textContent = `✅ ${res.copied} Dateien nach ${targetDir} kopiert`;
-  else {
+  if (res.ok) {
+    el.status.textContent = `✅ ${res.copied} Dateien nach ${targetDir} kopiert`;
+    // Offer to push the matching title list onto the phone via ADB.
+    if (
+      state.slots.filter(Boolean).length &&
+      confirm("Fertig. Auch die aktuelle Titelliste per ADB aufs Handy schieben?")
+    ) {
+      el.status.textContent = "Schiebe Liste per ADB…";
+      const r = await api.adbPushList(buildTrackListJson());
+      el.status.textContent = r && r.ok
+        ? `✅ ${res.copied} Dateien kopiert · Liste aufs Handy geschoben`
+        : `✅ ${res.copied} Dateien kopiert (ADB-Fehler: ${r && r.error})`;
+    }
+  } else {
     el.status.textContent = "";
     alert("Kopieren fehlgeschlagen: " + res.error);
   }
