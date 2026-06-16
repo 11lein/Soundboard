@@ -13,7 +13,8 @@
   "license": "MIT",
   "devDependencies": {
     "electron": "^33.0.0",
-    "electron-builder": "^25.0.0"
+    "electron-builder": "^25.0.0",
+    "electron-reloader": "^1.2.3"
   },
   "build": {
     "appId": "de.11lein.mp3sorter",

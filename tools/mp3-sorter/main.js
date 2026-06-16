@@ -35,6 +35,17 @@ async function writeConfig(patch) {
 // "GetVSyncParametersIfAvailable() failed" GL warnings on Linux/VMs.
 app.disableHardwareAcceleration();
 
+// Dev convenience: live-reload the window on renderer/HTML/CSS changes and
+// restart on main/preload changes, while the app is open. No-op in a packaged
+// build (the dev dependency isn't bundled there).
+if (!app.isPackaged) {
+  try {
+    require("electron-reloader")(module, { ignore: ["test", "lib/key-colors.json"] });
+  } catch {
+    /* electron-reloader not installed – fine */
+  }
+}
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1100,
