@@ -191,6 +191,14 @@ ipcMain.handle("export-pdf", async (_e, html) => {
 
 // --- IPC: export the track list (number -> title) as JSON ---
 ipcMain.handle("export-list", async (_e, defaultName, json) => {
+  // Always drop a copy into the app's assets, so the next app build bundles the
+  // latest list and the phone can import it without copying a file around.
+  try {
+    const appCopy = path.join(__dirname, "..", "..", "app", "assets", "tracklist.json");
+    await fs.writeFile(appCopy, json, "utf8");
+  } catch {
+    /* ignore – e.g. running from a packaged build without the repo layout */
+  }
   const save = await dialog.showSaveDialog({
     defaultPath: defaultName,
     filters: [{ name: "JSON", extensions: ["json"] }],

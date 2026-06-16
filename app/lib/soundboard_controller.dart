@@ -246,6 +246,21 @@ class SoundboardController extends ChangeNotifier {
     }
   }
 
+  /// Parse a list JSON into entries without importing it (for a diff preview).
+  /// Returns null if the file is not a valid track list.
+  List<TrackEntry>? parseTracks(String json) {
+    try {
+      final data = jsonDecode(json) as Map<String, dynamic>;
+      return (data['tracks'] as List)
+          .map((e) =>
+              TrackEntry((e['n'] as num).toInt(), (e['title'] ?? '').toString()))
+          .toList()
+        ..sort((a, b) => a.n - b.n);
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Edit a single title and persist the updated list (so it survives and can
   /// be re-exported for renaming in the sorter).
   Future<void> updateTrackTitle(int n, String title) async {
