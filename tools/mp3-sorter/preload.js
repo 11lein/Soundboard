@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld("api", {
   colors: ipcRenderer.sendSync("get-colors"),
   fileUrl: (folder, name) => ipcRenderer.invoke("file-url", folder, name),
   pickFolder: () => ipcRenderer.invoke("pick-folder"),
+  showInFolder: (folder) => ipcRenderer.invoke("show-in-folder", folder),
   listMp3: (folder) => ipcRenderer.invoke("list-mp3", folder),
   getLastFolder: () => ipcRenderer.invoke("get-last-folder"),
   loadDraft: (folder) => ipcRenderer.invoke("load-draft", folder),

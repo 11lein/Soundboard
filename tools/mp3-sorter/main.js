@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, shell } = require("electron");
 const path = require("path");
 const fs = require("fs/promises");
 const os = require("os");
@@ -83,6 +83,13 @@ ipcMain.on("get-colors", (e) => {
 ipcMain.handle("file-url", (_e, folder, name) =>
   pathToFileURL(path.join(folder, name)).href
 );
+
+// --- IPC: reveal the current folder in the OS file manager ---
+ipcMain.handle("show-in-folder", async (_e, folder) => {
+  if (!folder) return { ok: false };
+  const err = await shell.openPath(folder); // "" on success
+  return err ? { ok: false, error: err } : { ok: true };
+});
 
 // --- IPC: pick a folder ---
 ipcMain.handle("pick-folder", async () => {
@@ -294,7 +301,7 @@ ipcMain.handle("import-list", async () => {
 let previewWin = null;
 ipcMain.handle("preview-pdf", async (_e, html) => {
   try {
-    const tmp = path.join(os.tmpdir(), "mp3sorter-preview.pdf");
+    const tmp = path.join(os.tmpdir(), "soundboard-belegung.pdf");
     await fs.writeFile(tmp, await htmlToPdf(html));
     if (previewWin && !previewWin.isDestroyed()) previewWin.close();
     previewWin = new BrowserWindow({

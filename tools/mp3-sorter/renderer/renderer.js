@@ -23,13 +23,12 @@ const el = {
   status: document.getElementById("status"),
   openBtn: document.getElementById("open-btn"),
   refreshBtn: document.getElementById("refresh-btn"),
+  explorerBtn: document.getElementById("explorer-btn"),
   renameBtn: document.getElementById("rename-btn"),
   listBtn: document.getElementById("list-btn"),
   listImportBtn: document.getElementById("list-import-btn"),
   sdBtn: document.getElementById("sd-btn"),
   previewBtn: document.getElementById("preview-btn"),
-  pdfBtn: document.getElementById("pdf-btn"),
-  saveDraftBtn: document.getElementById("save-draft-btn"),
   commitBtn: document.getElementById("commit-btn"),
   dropZone: document.getElementById("drop-zone"),
   // renamer
@@ -442,20 +441,30 @@ function updateToolbar() {
         state.trash.length ? ` · ${state.trash.length} im Papierkorb` : ""
       }${state.dirty ? " · ungespeichert" : ""}`
     : "";
-  el.saveDraftBtn.disabled = !state.folder || n === 0;
   el.commitBtn.disabled = !state.folder || (renames === 0 && state.trash.length === 0);
   el.previewBtn.disabled = n === 0;
-  el.pdfBtn.disabled = n === 0;
   el.refreshBtn.disabled = !state.folder;
+  el.explorerBtn.disabled = !state.folder;
   el.renameBtn.disabled = n === 0;
   el.listBtn.disabled = n === 0; // export includes parked (700+) too
   el.listImportBtn.disabled = n === 0; // applies to slots and parked (700+)
   el.sdBtn.disabled = !state.folder || n === 0; // parked files go on the card too
 }
 
+// Auto-save the draft shortly after the last change (replaces the manual
+// "Zwischenspeichern" button) so the arrangement is never lost.
+let _draftSaveTimer = null;
 function markDirty() {
   state.dirty = true;
   render();
+  if (state.folder) {
+    clearTimeout(_draftSaveTimer);
+    _draftSaveTimer = setTimeout(() => {
+      api.saveDraft(state.folder, draftFromState());
+      state.dirty = false;
+      render();
+    }, 1000);
+  }
 }
 
 // ---------- Loading ----------
@@ -531,12 +540,11 @@ el.refreshBtn.addEventListener("click", async () => {
   setTimeout(render, 1000);
 });
 
-el.saveDraftBtn.addEventListener("click", async () => {
+// Reveal the current folder in the OS file manager.
+el.explorerBtn.addEventListener("click", async () => {
   if (!state.folder) return;
-  await api.saveDraft(state.folder, draftFromState());
-  state.dirty = false;
-  el.status.textContent = "Zwischengespeichert ✔";
-  setTimeout(render, 1200);
+  const r = await api.showInFolder(state.folder);
+  if (r && r.error) el.status.textContent = "Konnte Ordner nicht öffnen: " + r.error;
 });
 
 el.commitBtn.addEventListener("click", async () => {
@@ -575,21 +583,13 @@ el.commitBtn.addEventListener("click", async () => {
   render();
 });
 
+// Open the PDF in a preview window; from there you can print or save it.
 el.previewBtn.addEventListener("click", async () => {
   if (!countFiles()) return;
-  el.status.textContent = "Erzeuge Vorschau…";
+  el.status.textContent = "Erzeuge PDF-Vorschau…";
   const res = await api.previewPdf(buildPrintHtml());
   el.status.textContent = res && res.error ? "Vorschau-Fehler: " + res.error : "";
   if (res && res.error) alert("Vorschau-Fehler: " + res.error);
-});
-
-el.pdfBtn.addEventListener("click", async () => {
-  if (!countFiles()) return;
-  el.status.textContent = "Erzeuge PDF…";
-  const res = await api.exportPdf(buildPrintHtml());
-  if (res && res.ok) el.status.textContent = "PDF gespeichert: " + res.path;
-  else if (res && res.error) alert("PDF-Fehler: " + res.error);
-  else el.status.textContent = "";
 });
 
 // ---------- Track list export (number -> title) ----------
