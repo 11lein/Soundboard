@@ -513,12 +513,24 @@ let copyCancelled = false;
 ipcMain.handle("cancel-copy", () => {
   copyCancelled = true;
 });
-ipcMain.handle("copy-to-card", async (event, srcFolder, targetDir, items) => {
+ipcMain.handle("copy-to-card", async (event, srcFolder, targetDir, items, wipeRoot) => {
   copyCancelled = false;
   try {
-    // Clean sync: wipe the MP3 folder first, then copy everything fresh, so the
-    // card never keeps stale/renamed files.
-    await fs.rm(targetDir, { recursive: true, force: true });
+    // Clean sync. The DFPlayer needs a card with nothing but the MP3 files, so
+    // for a removable drive we wipe the whole card root; for a manually chosen
+    // folder (safer) only the MP3 subfolder.
+    if (wipeRoot) {
+      const root = path.dirname(targetDir); // mount root (targetDir = root/MP3)
+      for (const entry of await fs.readdir(root)) {
+        try {
+          await fs.rm(path.join(root, entry), { recursive: true, force: true });
+        } catch {
+          /* skip locked/system entries (e.g. System Volume Information) */
+        }
+      }
+    } else {
+      await fs.rm(targetDir, { recursive: true, force: true });
+    }
     await fs.mkdir(targetDir, { recursive: true });
     let copied = 0;
     for (const it of items) {

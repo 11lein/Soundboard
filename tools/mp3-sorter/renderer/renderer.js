@@ -960,7 +960,7 @@ async function openSdDialog() {
   overlay.innerHTML = `
     <div class="dialog wide">
       <h3>Auf SD-Karte schieben (${items.length} Dateien${parked.length ? `, davon ${parked.length} Parkplätze ab 0700` : ""})</h3>
-      <p class="muted">Der <code>MP3</code>-Ordner auf dem Ziel wird zuvor geleert und neu befüllt.</p>
+      <p class="muted">Wechseldatenträger werden <b>komplett geleert</b> und neu befüllt (für den DFPlayer nötig). Ein gewählter Ordner: nur dessen <code>MP3</code>-Unterordner.</p>
       ${drives.length ? `<p class="muted">Wechseldatenträger:</p>${driveRows}` : `<p class="muted">Keine Wechseldatenträger erkannt.</p>`}
       <div class="dialog-buttons">
         <button id="sd-pick" class="link">📂 Ordner wählen…</button>
@@ -973,7 +973,7 @@ async function openSdDialog() {
   overlay.querySelector("#sd-pick").onclick = async () => {
     close();
     const dir = await api.pickFolder();
-    if (dir) await copyToCard(dir, items, null);
+    if (dir) await copyToCard(dir, items, null, false); // chosen folder: only MP3/
   };
   overlay.querySelectorAll(".sd-drive").forEach((btn) => {
     btn.onclick = async () => {
@@ -983,7 +983,7 @@ async function openSdDialog() {
       const ans = await sdFormatPrompt(d);
       if (ans === "cancel") return;
       doFormat = ans === "format";
-      await copyToCard(d.mount, items, doFormat ? d : null);
+      await copyToCard(d.mount, items, doFormat ? d : null, true); // drive: wipe whole card
     };
   });
 }
@@ -1014,7 +1014,7 @@ function sdFormatPrompt(d) {
   });
 }
 
-async function copyToCard(mount, items, driveToFormat) {
+async function copyToCard(mount, items, driveToFormat, wipeRoot) {
   if (driveToFormat) {
     el.status.textContent = "Formatiere…";
     const fr = await api.formatDrive(driveToFormat);
@@ -1034,7 +1034,7 @@ async function copyToCard(mount, items, driveToFormat) {
   const off = api.onCopyProgress((d) => prog.update(d));
   let res;
   try {
-    res = await api.copyToCard(state.folder, targetDir, items);
+    res = await api.copyToCard(state.folder, targetDir, items, wipeRoot);
   } finally {
     off();
     prog.close();

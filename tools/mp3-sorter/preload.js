@@ -14,8 +14,8 @@ contextBridge.exposeInMainWorld("api", {
     ipcRenderer.invoke("apply-renames", folder, plan),
   listRemovableDrives: () => ipcRenderer.invoke("list-removable-drives"),
   formatDrive: (drive) => ipcRenderer.invoke("format-drive", drive),
-  copyToCard: (srcFolder, targetDir, items) =>
-    ipcRenderer.invoke("copy-to-card", srcFolder, targetDir, items),
+  copyToCard: (srcFolder, targetDir, items, wipeRoot) =>
+    ipcRenderer.invoke("copy-to-card", srcFolder, targetDir, items, wipeRoot),
   cancelCopy: () => ipcRenderer.invoke("cancel-copy"),
   onCopyProgress: (cb) => {
     const listener = (_e, data) => cb(data);
