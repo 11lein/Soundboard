@@ -19,7 +19,8 @@ class _HomePageState extends State<HomePage> {
   List<List<String>> _rows = [];
   Map<String, dynamic> _palette = {};
   final _searchCtrl = TextEditingController();
-  final _bankPager = PageController(); // page 0 = bank 1
+  final _bankPager = PageController(); // page 0 = bank 1, page 6 = extras (700+)
+  int _pageIndex = 0;
   String _query = '';
   bool _errorExpanded = false;
 
@@ -161,9 +162,20 @@ class _HomePageState extends State<HomePage> {
   // Switch bank from the chips, animating the swipe pager to match.
   void _goToBank(int b) {
     Haptics.light();
+    setState(() => _pageIndex = b - 1);
     controller.setBank(b);
+    _animatePager(b - 1);
+  }
+
+  void _goToExtras() {
+    Haptics.light();
+    setState(() => _pageIndex = 6);
+    _animatePager(6);
+  }
+
+  void _animatePager(int page) {
     if (_bankPager.hasClients) {
-      _bankPager.animateToPage(b - 1,
+      _bankPager.animateToPage(page,
           duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
     }
   }
@@ -276,16 +288,21 @@ class _HomePageState extends State<HomePage> {
       children: [
         _bankSelector(),
         Expanded(
+          // 6 bank pages + 1 "extras" page (700+ app-only tracks).
           child: PageView.builder(
             controller: _bankPager,
-            itemCount: 6,
+            itemCount: 7,
             onPageChanged: (i) {
-              if (controller.activeBank != i + 1) {
+              setState(() => _pageIndex = i);
+              if (i < 6 && controller.activeBank != i + 1) {
                 Haptics.light();
                 controller.setBank(i + 1);
+              } else if (i == 6) {
+                Haptics.light();
               }
             },
-            itemBuilder: (_, i) => _grid(connected, i + 1),
+            itemBuilder: (_, i) =>
+                i < 6 ? _grid(connected, i + 1) : _extrasGrid(connected),
           ),
         ),
         _controls(connected),
@@ -528,20 +545,49 @@ class _HomePageState extends State<HomePage> {
                 child: _bankButton(b),
               ),
             ),
+          // 7th: extras page (700+ app-only tracks).
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 3),
+            child: SizedBox(width: 46, child: _bankCell(
+              selected: _pageIndex == 6,
+              onTap: _goToExtras,
+              child: Icon(Icons.more_horiz,
+                  color: _pageIndex == 6 ? Colors.black : Colors.white70),
+            )),
+          ),
         ],
       ),
     );
   }
 
   Widget _bankButton(int b) {
-    final selected = controller.activeBank == b;
+    final selected = _pageIndex == b - 1;
+    return _bankCell(
+      selected: selected,
+      onTap: () => _goToBank(b),
+      child: Text(
+        '${b * 100}',
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: selected ? 18 : 15,
+          color: selected ? Colors.black : Colors.white70,
+        ),
+      ),
+    );
+  }
+
+  Widget _bankCell({
+    required bool selected,
+    required VoidCallback onTap,
+    required Widget child,
+  }) {
     return Material(
       color: selected ? Colors.lightBlueAccent : Colors.white12,
       borderRadius: BorderRadius.circular(10),
       elevation: selected ? 4 : 0,
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
-        onTap: () => _goToBank(b),
+        onTap: onTap,
         child: Container(
           height: 44,
           alignment: Alignment.center,
@@ -552,14 +598,7 @@ class _HomePageState extends State<HomePage> {
               width: selected ? 2 : 1,
             ),
           ),
-          child: Text(
-            '${b * 100}',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: selected ? 18 : 15,
-              color: selected ? Colors.black : Colors.white70,
-            ),
-          ),
+          child: child,
         ),
       ),
     );
@@ -591,6 +630,85 @@ class _HomePageState extends State<HomePage> {
           ),
         );
       },
+    );
+  }
+
+  // The "extras" page (700+): app-only tracks in a scrollable 5-column grid.
+  Widget _extrasGrid(bool connected) {
+    final extras = controller.tracklist.where((t) => t.n >= 700).toList()
+      ..sort((a, b) => a.n - b.n);
+    if (extras.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Text(
+            'Keine Zusatztitel (700+).\n\nIm Sorter Dateien in die Parkplätze legen, '
+            'die Liste exportieren/übertragen – sie erscheinen dann hier.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white60),
+          ),
+        ),
+      );
+    }
+    return GridView.count(
+      crossAxisCount: 5,
+      mainAxisSpacing: 6,
+      crossAxisSpacing: 6,
+      padding: const EdgeInsets.all(8),
+      childAspectRatio: 1,
+      children: [for (final t in extras) _extraTile(t, connected)],
+    );
+  }
+
+  Widget _extraTile(TrackEntry t, bool connected) {
+    final playing = controller.playingTrack == t.n;
+    return _PlayPulse(
+      active: playing,
+      radius: BorderRadius.circular(10),
+      child: Material(
+        color: const Color(0xFFcfd3e0), // neutral (no bank colour)
+        borderRadius: BorderRadius.circular(10),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: connected
+              ? () {
+                  controller.playNumber(t.n);
+                  Haptics.medium();
+                }
+              : _notConnectedHint,
+          onLongPress: () {
+            Haptics.light();
+            _editEntry(t);
+          },
+          child: Container(
+            padding: const EdgeInsets.all(3),
+            child: Column(
+              children: [
+                Expanded(
+                  child: Center(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(_wrapKeyTitle(t.title),
+                          textAlign: TextAlign.center,
+                          maxLines: 3,
+                          style: const TextStyle(
+                              color: Colors.black87,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                              height: 1.1)),
+                    ),
+                  ),
+                ),
+                Text('${t.n}',
+                    style: TextStyle(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        fontSize: 6,
+                        height: 1.0)),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
