@@ -48,10 +48,11 @@ transitive `file_picker` requirement). Committed prebuilt APK: `app/soundboard-r
 | Audio module | DFPlayer Mini (HardwareSerial UART2, RX=22 TX=23, 9600 baud) |
 | Play state | DFPlayer BUSY pin → GPIO4 (LOW while playing) |
 | Wireless | ESP32 Bluetooth Classic (`BluetoothSerial`, device name `das_11lein`) |
-| Output | Line/SPK-out → car amplifier |
+| Output | DAC line-out (`DAC_R`/`DAC_L`, line level) → car amplifier line-in |
 
 **Pins** (rows `19,18,5,17,16`, cols `32,33,25,26,27`): DFPlayer TX→GPIO22,
-RX→GPIO23 **(via 1 kΩ in series)**, BUSY→GPIO4, VCC→5V, GND→GND, SPK1/SPK2→speaker.
+RX→GPIO23 **(via 1 kΩ in series)**, BUSY→GPIO4, VCC→5V, GND→GND (ESP32),
+DAC_R/DAC_L→amp line-in, line-out GND→DFPlayer GND between SPK1/SPK2 (SPK amp pins unused).
 Wiring diagram: `docu/wiring_diagram.png` (source `.svg`, regen `python3 docu/gen_wiring.py`).
 The Wokwi sketch in `docu/wokwi/` is outdated (used an SD module as placeholder).
 

@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
-"""Generate a clean wiring diagram (SVG) for the ESP32 soundboard.
+"""Generate a wiring diagram (SVG) for the ESP32 soundboard.
 
 Two panels:
-  A) Audio path: DFPlayer Mini <-> ESP32 <-> speaker (incl. the BUSY pin).
+  A) Audio path: DFPlayer Mini <-> ESP32 DevKit, DAC line-out -> 3.5 mm stereo
+     jack (TRS) -> amplifier line-in (incl. the BUSY feedback pin).
   B) 5x5 key matrix <-> ESP32 (row/column GPIOs).
+
+Vector art (no photo/Fritzing render): components are drawn as recognisable
+boards with gradients so they read as "real" parts while staying versionable.
 
 Pins taken directly from src/main.cpp:
   rows  = GPIO 19,18,5,17,16   cols = GPIO 32,33,25,26,27
   DFPlayer: TX->GPIO22, RX->GPIO23, BUSY->GPIO4, VCC->5V, GND->GND
+  Audio:    DAC_L->Tip, DAC_R->Ring, line-out GND->Sleeve (GND between SPK1/SPK2)
 """
 
-W, H = 1000, 1300
+W, H = 1000, 1460
 parts = []
 
 FONT = "DejaVu Sans"
@@ -18,16 +23,12 @@ MONO = "DejaVu Sans Mono"
 
 # ---- palette ----
 BG = "#f4f5f7"
-BOARD = "#2f6f4f"        # ESP board green
-BOARD_DK = "#24573e"
-DFP = "#3a4a8c"          # DFPlayer blue
-DFP_DK = "#2c3a6e"
-SPK = "#3a3a3a"
+INK = "#1b1f27"
+MUTE = "#5b6573"
 KEY = "#c8302a"
 KEY_DK = "#9a231e"
 PAD = "#d9dde3"
-INK = "#1b1f27"
-MUTE = "#5b6573"
+DFP = "#3a4a8c"
 
 WIRE = {
     "5v": "#d23b3b",
@@ -35,10 +36,34 @@ WIRE = {
     "tx": "#2e9e4f",
     "rx": "#2f6fd2",
     "busy": "#f08a24",
-    "spk": "#777777",
+    "audio_l": "#8e44ad",
+    "audio_r": "#12968a",
     "row": "#8f4814",
     "col": "#7a3fb0",
 }
+
+# ---- SVG gradient definitions (give the parts a bit of real-world sheen) ----
+DEFS = """<defs>
+  <linearGradient id="gPcbEsp" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#2b3140"/><stop offset="1" stop-color="#161920"/>
+  </linearGradient>
+  <linearGradient id="gPcbDfp" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#3a4488"/><stop offset="1" stop-color="#1b2144"/>
+  </linearGradient>
+  <linearGradient id="gGold" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#f6d987"/><stop offset="1" stop-color="#c39a2c"/>
+  </linearGradient>
+  <linearGradient id="gMetal" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#f3f5f8"/><stop offset="0.5" stop-color="#c9ced7"/>
+    <stop offset="1" stop-color="#a5abb6"/>
+  </linearGradient>
+  <linearGradient id="gShield" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#eaedf2"/><stop offset="1" stop-color="#b3b9c4"/>
+  </linearGradient>
+  <linearGradient id="gBarrel" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#454545"/><stop offset="1" stop-color="#161616"/>
+  </linearGradient>
+</defs>"""
 
 
 def rect(x, y, w, h, fill, rx=8, stroke="none", sw=0, opacity=1):
@@ -68,154 +93,164 @@ def dot(x, y, color, r=5):
     parts.append(f'<circle cx="{x}" cy="{y}" r="{r}" fill="{color}"/>')
 
 
-def pin(x, y, color="#caa23a"):
+def gold_pad(x, y):
+    # A through-hole header pad: gold ring on the board edge.
     parts.append(
-        f'<circle cx="{x}" cy="{y}" r="4.5" fill="{color}" '
-        f'stroke="#7a6320" stroke-width="1"/>'
+        f'<rect x="{x-9}" y="{y-7}" width="18" height="14" rx="3" '
+        f'fill="url(#gGold)" stroke="#8a6d1e" stroke-width="1"/>'
     )
+    parts.append(f'<circle cx="{x}" cy="{y}" r="3.2" fill="#2b2410"/>')
 
 
-# ===== background =====
+# ===== background + defs =====
+parts.append(DEFS)
 rect(0, 0, W, H, BG, rx=0)
 
 # ===== title =====
 text(W / 2, 44, "Soundboard – Verkabelung (ESP32 + DFPlayer Mini)",
      size=26, anchor="middle", weight="bold")
-text(W / 2, 70, "5×5-Tastenmatrix · Audio über DFPlayer-Endstufe · BUSY-Rückmeldung",
-     size=15, anchor="middle", fill=MUTE)
+text(W / 2, 70,
+     "5×5-Tastenmatrix · DFPlayer-DAC → 3,5 mm Stereo-Klinke (Line Out) · BUSY-Rückmeldung",
+     size=14, anchor="middle", fill=MUTE)
 
 # =====================================================================
-#  PANEL A — Audio path
+#  PANEL A — Audio path (realistic component style)
 # =====================================================================
-pax, pay, paw, pah = 30, 96, 940, 496
+pax, pay, paw, pah = 30, 96, 940, 648
 rect(pax, pay, paw, pah, "#ffffff", rx=14, stroke="#d2d7df", sw=2)
-text(pax + 20, pay + 34, "A · Audio: DFPlayer Mini ↔ ESP32 ↔ Lautsprecher",
-     size=19, weight="bold")
+text(pax + 20, pay + 34,
+     "A · Audio: DFPlayer Mini ↔ ESP32 · DAC → Line Out (3,5 mm Klinke → Endstufe)",
+     size=18, weight="bold")
 
-# ---- ESP32 board (center) ----
-ex, ey, ew, eh = 410, 150, 170, 340
-rect(ex, ey, ew, eh, BOARD, rx=14)
-rect(ex + ew / 2 - 34, ey + 14, 68, 40, "#cfd3da", rx=4)   # antenna/can
-rect(ex + 30, ey + 70, ew - 60, 150, BOARD_DK, rx=8)       # chip
-text(ex + ew / 2, ey + 158, "ESP32", size=22, anchor="middle",
-     fill="#eef2ee", weight="bold")
-rect(ex + ew / 2 - 22, ey + eh - 36, 44, 24, "#1b1b1b", rx=4)  # usb
-text(ex + ew / 2, ey + eh - 19, "USB", size=11, anchor="middle", fill="#cfd3da")
+# shared vertical positions for the 5 ESP<->DFPlayer signal rows
+row_y = [350, 392, 434, 476, 518]
 
-# ESP right-side pins used by the DFPlayer (top group)
-esp_pins_R = [
-    ("5V",     "5v"),
-    ("GND",    "gnd"),
-    ("G23 (TX2)", "rx"),   # ESP TX -> DFPlayer RX
-    ("G22 (RX2)", "tx"),   # ESP RX -> DFPlayer TX
-    ("G4",     "busy"),
-]
-esp_pin_y = {}
-py0 = ey + 90
-for i, (name, key) in enumerate(esp_pins_R):
-    yy = py0 + i * 46
-    esp_pin_y[name] = yy
-    pin(ex + ew, yy)
-    text(ex + ew - 10, yy + 5, name, size=13, anchor="end",
-         fill="#eef2ee", font=MONO)
+# ---------------------------------------------------------------
+#  DFPlayer Mini (centre)
+# ---------------------------------------------------------------
+dfx, dfy, dfw, dfh = 400, 250, 200, 300
+rect(dfx, dfy, dfw, dfh, "url(#gPcbDfp)", rx=10, stroke="#0e1230", sw=2)
+text(dfx + dfw / 2, dfy + 26, "DFPlayer Mini", size=15, anchor="middle",
+     fill="#d7dcf5", weight="bold")
+# microSD cage (metal)
+rect(dfx + 34, dfy + 40, dfw - 68, 54, "url(#gMetal)", rx=6,
+     stroke="#8f95a1", sw=1.5)
+rect(dfx + 46, dfy + 50, dfw - 92, 16, "#8b91a0", rx=3)
+text(dfx + dfw / 2, dfy + 84, "microSD", size=11, anchor="middle", fill="#3c424c")
 
-# ---- DFPlayer Mini (right) ----
-dx, dy, dw, dh = 700, 150, 150, 300
-rect(dx, dy, dw, dh, DFP, rx=12)
-text(dx + dw / 2, dy + 26, "DFPlayer", size=17, anchor="middle",
-     fill="#eaecf7", weight="bold")
-text(dx + dw / 2, dy + 44, "Mini", size=14, anchor="middle", fill="#c4cae8")
-rect(dx + 24, dy + 58, dw - 48, 86, DFP_DK, rx=6)   # SD slot
-text(dx + dw / 2, dy + 106, "microSD", size=12, anchor="middle", fill="#aeb6df")
-
-# DFPlayer left-side pins (facing the ESP)
-dfp_pins = [
-    ("VCC",  "5v"),
-    ("RX",   "rx"),
-    ("TX",   "tx"),
-    ("BUSY", "busy"),
-    ("GND",  "gnd"),
-]
-dfp_pin_y = {}
-dy0 = dy + 180
-for i, (name, key) in enumerate(dfp_pins):
-    yy = dy0 + i * 26
-    dfp_pin_y[name] = yy
-    pin(dx, yy)
-    text(dx + 12, yy + 4, name, size=12, anchor="start",
+# right-edge header (faces the ESP): VCC/RX/TX/BUSY/GND
+dfp_right = [("VCC", "5v"), ("RX", "rx"), ("TX", "tx"), ("BUSY", "busy"), ("GND", "gnd")]
+dfp_right_x = dfx + dfw
+for (name, _key), yy in zip(dfp_right, row_y):
+    gold_pad(dfp_right_x, yy)
+    text(dfp_right_x - 14, yy + 4, name, size=12, anchor="end",
          fill="#eaecf7", font=MONO)
 
-# DFPlayer speaker pins (bottom edge -> speaker)
-spk_pins = [("SPK1", dx + 40), ("SPK2", dx + dw - 40)]
-for name, xx in spk_pins:
-    pin(xx, dy + dh)
-    text(xx, dy + dh + 18, name, size=11, anchor="middle", fill=DFP, font=MONO)
+# left-edge header (faces the jack): DAC_L / DAC_R / GND (line-out)
+audio_y = [366, 426, 486]
+dfp_left = [("DAC_L", "audio_l"), ("DAC_R", "audio_r"), ("GND", "gnd")]
+for (name, _key), yy in zip(dfp_left, audio_y):
+    gold_pad(dfx, yy)
+    text(dfx + 14, yy + 4, name, size=12, anchor="start",
+         fill="#eaecf7", font=MONO)
 
-# ---- Speaker (below DFPlayer) ----
-sx, sy, sr = dx + dw / 2, dy + dh + 70, 42
-parts.append(f'<circle cx="{sx}" cy="{sy}" r="{sr}" fill="{SPK}"/>')
-parts.append(f'<circle cx="{sx}" cy="{sy}" r="{sr-14}" fill="#555"/>')
-parts.append(f'<circle cx="{sx}" cy="{sy}" r="9" fill="#222"/>')
-text(sx, sy + sr + 18, "Lautsprecher", size=12, anchor="middle", fill=MUTE)
+# ---------------------------------------------------------------
+#  ESP32 DevKit (right)
+# ---------------------------------------------------------------
+ex, ey, ew, eh = 720, 190, 185, 400
+rect(ex, ey, ew, eh, "url(#gPcbEsp)", rx=10, stroke="#0b0d12", sw=2)
+# antenna meander at the very top
+ax = ex + ew / 2 - 40
+mdr = "M " + " ".join(
+    f"{ax + i*10},{ey + 12 + (6 if i % 2 else 0)}" for i in range(9)
+)
+parts.append(f'<path d="{mdr}" fill="none" stroke="#cfd3da" stroke-width="2"/>')
+# RF shield (WROOM can)
+rect(ex + 20, ey + 24, ew - 40, 92, "url(#gShield)", rx=6, stroke="#8f95a1", sw=1.5)
+text(ex + ew / 2, ey + 66, "ESP-WROOM-32", size=11, anchor="middle",
+     fill="#3c424c", weight="bold")
+text(ex + ew / 2, ey + 84, "WiFi · BT", size=9, anchor="middle", fill="#6b7280")
+text(ex + ew / 2, ey + 138, "ESP32 DevKit V1", size=15, anchor="middle",
+     fill="#eef2ee", weight="bold")
+# micro-USB at the bottom edge
+rect(ex + ew / 2 - 26, ey + eh - 22, 52, 22, "url(#gMetal)", rx=4,
+     stroke="#8f95a1", sw=1.5)
+text(ex + ew / 2, ey + eh - 30, "USB", size=10, anchor="middle", fill="#cfd3da")
 
-# ---- wires ESP <-> DFPlayer ----
-# Each ESP pin routes to the matching DFPlayer pin with an orthogonal path.
-route = [
-    ("5V",        "VCC",  "5v",   612),
-    ("G23 (TX2)", "RX",   "rx",   624),
-    ("G22 (RX2)", "TX",   "tx",   636),
-    ("G4",        "BUSY", "busy", 648),
-    ("GND",       "GND",  "gnd",  664),
-]
-for esp_name, dfp_name, key, midx in route:
-    y1 = esp_pin_y[esp_name]
-    y2 = dfp_pin_y[dfp_name]
-    wire([(ex + ew, y1), (midx, y1), (midx, y2), (dx, y2)], WIRE[key])
+# left-edge header (faces DFPlayer): 5V / G23 / G22 / G4 / GND
+esp_left = [("5V", "5v"), ("G23 (TX2)", "rx"), ("G22 (RX2)", "tx"),
+            ("G4", "busy"), ("GND", "gnd")]
+for (name, _key), yy in zip(esp_left, row_y):
+    gold_pad(ex, yy)
+    text(ex + 14, yy + 4, name, size=11, anchor="start",
+         fill="#eef2ee", font=MONO)
+# a few unused pads on the right edge, for a board-like look
+for i in range(6):
+    yy = ey + 210 + i * 30
+    gold_pad(ex + ew, yy)
 
-# 1 kΩ series resistor in the DFPlayer RX line (ESP GPIO23 -> DFPlayer RX),
-# drawn as an IEC rectangle on the horizontal run just before the RX pin.
-rxy = dfp_pin_y["RX"]
+# ---------------------------------------------------------------
+#  wires ESP <-> DFPlayer (straight, aligned rows)
+# ---------------------------------------------------------------
+for (name, key), yy in zip(dfp_right, row_y):
+    wire([(dfp_right_x + 9, yy), (ex - 9, yy)], WIRE[key])
+# 1 kΩ series resistor on the RX line (ESP G23 -> DFPlayer RX)
+ry = row_y[1]
+rmx = (dfp_right_x + ex) / 2
 parts.append(
-    f'<rect x="636" y="{rxy-9}" width="50" height="18" rx="3" '
+    f'<rect x="{rmx-26}" y="{ry-9}" width="52" height="18" rx="3" '
     f'fill="#f3ead0" stroke="#9a7d2e" stroke-width="2"/>'
 )
-text(661, rxy - 14, "1 kΩ", size=11, anchor="middle",
-     fill="#7a6320", weight="bold")
+text(rmx, ry - 14, "1 kΩ", size=11, anchor="middle", fill="#7a6320", weight="bold")
 
-# speaker wires
-wire([(dx + 40, dy + dh), (dx + 40, sy - 6), (sx - 18, sy - 6)], WIRE["spk"])
-wire([(dx + dw - 40, dy + dh), (dx + dw - 40, sy + 18), (sx + 18, sy + 18)], WIRE["spk"])
-
-# ---- connection table (left) ----
-tx0, ty0 = pax + 24, 200
-text(tx0, ty0 - 14, "Audio-Verbindungen", size=15, weight="bold")
-audio_rows = [
-    ("DFPlayer VCC", "ESP 5V", "5v"),
-    ("DFPlayer RX", "ESP GPIO23 (TX2) · 1 kΩ", "rx"),
-    ("DFPlayer TX", "ESP GPIO22 (RX2)", "tx"),
-    ("DFPlayer BUSY", "ESP GPIO4", "busy"),
-    ("DFPlayer GND", "ESP GND", "gnd"),
-    ("DFPlayer SPK1/SPK2", "Lautsprecher", "spk"),
+# ---------------------------------------------------------------
+#  3.5 mm stereo jack (TRS), vertical, tip up, left of the DFPlayer
+#  Bands aligned to the DFPlayer DAC/GND pads: Tip=L, Ring=R, Sleeve=GND.
+# ---------------------------------------------------------------
+jx = 250            # jack axis
+jw = 26             # metal band width
+# metal shaft segments (tip -> ring -> sleeve), attach points at audio_y
+segs = [
+    ("tip", audio_y[0] - 22, 44),   # y0, height
+    ("ring", audio_y[1] - 18, 40),
+    ("sleeve", audio_y[2] - 18, 40),
 ]
-for i, (a, b, key) in enumerate(audio_rows):
-    yy = ty0 + 18 + i * 32
-    parts.append(
-        f'<rect x="{tx0}" y="{yy-13}" width="14" height="14" rx="3" '
-        f'fill="{WIRE[key]}"/>'
-    )
-    text(tx0 + 24, yy, a, size=13, font=MONO)
-    text(tx0 + 24, yy + 14, "→ " + b, size=12, fill=MUTE, font=MONO)
-    ty0 += 14
+# tip cap (rounded top)
+parts.append(
+    f'<path d="M {jx-jw/2},{audio_y[0]+6} '
+    f'L {jx-jw/2},{audio_y[0]-16} Q {jx},{audio_y[0]-34} {jx+jw/2},{audio_y[0]-16} '
+    f'L {jx+jw/2},{audio_y[0]+6} Z" fill="url(#gMetal)" stroke="#8f95a1" stroke-width="1.5"/>'
+)
+for _name, y0, hh in segs[1:]:
+    rect(jx - jw / 2, y0, jw, hh, "url(#gMetal)", rx=3, stroke="#8f95a1", sw=1.5)
+# black insulator gaps between the bands
+for gy in (audio_y[0] + 6, audio_y[1] + 22):
+    rect(jx - jw / 2 - 1, gy, jw + 2, 8, "#111", rx=1)
+# barrel / grip below the sleeve, then the cable running off downwards
+rect(jx - 18, audio_y[2] + 22, 36, 70, "url(#gBarrel)", rx=8, stroke="#0a0a0a", sw=1)
+wire([(jx, audio_y[2] + 92), (jx, 610), (jx + 120, 630)], "#2a2a2a", w=8)
+text(jx + 130, 634, "→ Endstufe (Line-In)", size=12, anchor="start", fill=MUTE)
+text(jx, 662, "3,5 mm Stereo-Klinke (Line Out)", size=12, anchor="middle",
+     fill=INK, weight="bold")
 
-# highlight note for BUSY (the new wire)
-text(pax + 24, pay + pah - 18,
-     "★ Neu: BUSY (GPIO4) meldet \"spielt gerade\" – kein Serial-Polling mehr.",
-     size=13, fill=WIRE["busy"], weight="bold")
+# band labels (left of the jack)
+for lbl, yy in zip(["Tip · L", "Ring · R", "Sleeve · GND"], audio_y):
+    text(jx - jw / 2 - 12, yy + 4, lbl, size=11, anchor="end", fill=MUTE, font=MONO)
+
+# audio wires: DFPlayer DAC/GND pads -> jack bands (straight, aligned)
+for (name, key), yy in zip(dfp_left, audio_y):
+    wire([(dfx - 9, yy), (jx + jw / 2 + 1, yy)], WIRE[key])
+
+# note
+text(pax + 24, pay + pah - 20,
+     "DAC_R/DAC_L = Line-Pegel → Endstufe · Line-Out-GND am DFPlayer-GND zwischen SPK1/SPK2 "
+     "· BUSY (GPIO4) meldet „spielt gerade\".",
+     size=12, fill=MUTE)
 
 # =====================================================================
 #  PANEL B — Key matrix
 # =====================================================================
-pbx, pby, pbw, pbh = 30, 612, 940, 656
+pbx, pby, pbw, pbh = 30, 764, 940, 656
 rect(pbx, pby, pbw, pbh, "#ffffff", rx=14, stroke="#d2d7df", sw=2)
 text(pbx + 20, pby + 34, "B · Tastenmatrix 5×5 ↔ ESP32 (24 Tasten A–X + Mode-Taste Y)",
      size=19, weight="bold")
@@ -274,7 +309,6 @@ for r in range(5):
         is_mode = letters[r][c] == "Y"
         fill = PAD if is_mode else KEY
         edge = "#9aa0ad" if is_mode else KEY_DK
-        # contact stubs to row and column
         dot(cx, cy, edge, r=key_r + 4)
         parts.append(
             f'<circle cx="{cx}" cy="{cy}" r="{key_r}" fill="{fill}" '

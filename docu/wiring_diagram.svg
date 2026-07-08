@@ -1,197 +1,237 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1300" viewBox="0 0 1000 1300">
-<rect x="0" y="0" width="1000" height="1300" rx="0" fill="#f4f5f7" opacity="1"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1460" viewBox="0 0 1000 1460">
+<defs>
+  <linearGradient id="gPcbEsp" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#2b3140"/><stop offset="1" stop-color="#161920"/>
+  </linearGradient>
+  <linearGradient id="gPcbDfp" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#3a4488"/><stop offset="1" stop-color="#1b2144"/>
+  </linearGradient>
+  <linearGradient id="gGold" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#f6d987"/><stop offset="1" stop-color="#c39a2c"/>
+  </linearGradient>
+  <linearGradient id="gMetal" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#f3f5f8"/><stop offset="0.5" stop-color="#c9ced7"/>
+    <stop offset="1" stop-color="#a5abb6"/>
+  </linearGradient>
+  <linearGradient id="gShield" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#eaedf2"/><stop offset="1" stop-color="#b3b9c4"/>
+  </linearGradient>
+  <linearGradient id="gBarrel" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#454545"/><stop offset="1" stop-color="#161616"/>
+  </linearGradient>
+</defs>
+<rect x="0" y="0" width="1000" height="1460" rx="0" fill="#f4f5f7" opacity="1"/>
 <text x="500.0" y="44" font-family="DejaVu Sans" font-size="26" fill="#1b1f27" text-anchor="middle" font-weight="bold">Soundboard – Verkabelung (ESP32 + DFPlayer Mini)</text>
-<text x="500.0" y="70" font-family="DejaVu Sans" font-size="15" fill="#5b6573" text-anchor="middle" font-weight="normal">5×5-Tastenmatrix · Audio über DFPlayer-Endstufe · BUSY-Rückmeldung</text>
-<rect x="30" y="96" width="940" height="496" rx="14" fill="#ffffff" opacity="1" stroke="#d2d7df" stroke-width="2"/>
-<text x="50" y="130" font-family="DejaVu Sans" font-size="19" fill="#1b1f27" text-anchor="start" font-weight="bold">A · Audio: DFPlayer Mini ↔ ESP32 ↔ Lautsprecher</text>
-<rect x="410" y="150" width="170" height="340" rx="14" fill="#2f6f4f" opacity="1"/>
-<rect x="461.0" y="164" width="68" height="40" rx="4" fill="#cfd3da" opacity="1"/>
-<rect x="440" y="220" width="110" height="150" rx="8" fill="#24573e" opacity="1"/>
-<text x="495.0" y="308" font-family="DejaVu Sans" font-size="22" fill="#eef2ee" text-anchor="middle" font-weight="bold">ESP32</text>
-<rect x="473.0" y="454" width="44" height="24" rx="4" fill="#1b1b1b" opacity="1"/>
-<text x="495.0" y="471" font-family="DejaVu Sans" font-size="11" fill="#cfd3da" text-anchor="middle" font-weight="normal">USB</text>
-<circle cx="580" cy="240" r="4.5" fill="#caa23a" stroke="#7a6320" stroke-width="1"/>
-<text x="570" y="245" font-family="DejaVu Sans Mono" font-size="13" fill="#eef2ee" text-anchor="end" font-weight="normal">5V</text>
-<circle cx="580" cy="286" r="4.5" fill="#caa23a" stroke="#7a6320" stroke-width="1"/>
-<text x="570" y="291" font-family="DejaVu Sans Mono" font-size="13" fill="#eef2ee" text-anchor="end" font-weight="normal">GND</text>
-<circle cx="580" cy="332" r="4.5" fill="#caa23a" stroke="#7a6320" stroke-width="1"/>
-<text x="570" y="337" font-family="DejaVu Sans Mono" font-size="13" fill="#eef2ee" text-anchor="end" font-weight="normal">G23 (TX2)</text>
-<circle cx="580" cy="378" r="4.5" fill="#caa23a" stroke="#7a6320" stroke-width="1"/>
-<text x="570" y="383" font-family="DejaVu Sans Mono" font-size="13" fill="#eef2ee" text-anchor="end" font-weight="normal">G22 (RX2)</text>
-<circle cx="580" cy="424" r="4.5" fill="#caa23a" stroke="#7a6320" stroke-width="1"/>
-<text x="570" y="429" font-family="DejaVu Sans Mono" font-size="13" fill="#eef2ee" text-anchor="end" font-weight="normal">G4</text>
-<rect x="700" y="150" width="150" height="300" rx="12" fill="#3a4a8c" opacity="1"/>
-<text x="775.0" y="176" font-family="DejaVu Sans" font-size="17" fill="#eaecf7" text-anchor="middle" font-weight="bold">DFPlayer</text>
-<text x="775.0" y="194" font-family="DejaVu Sans" font-size="14" fill="#c4cae8" text-anchor="middle" font-weight="normal">Mini</text>
-<rect x="724" y="208" width="102" height="86" rx="6" fill="#2c3a6e" opacity="1"/>
-<text x="775.0" y="256" font-family="DejaVu Sans" font-size="12" fill="#aeb6df" text-anchor="middle" font-weight="normal">microSD</text>
-<circle cx="700" cy="330" r="4.5" fill="#caa23a" stroke="#7a6320" stroke-width="1"/>
-<text x="712" y="334" font-family="DejaVu Sans Mono" font-size="12" fill="#eaecf7" text-anchor="start" font-weight="normal">VCC</text>
-<circle cx="700" cy="356" r="4.5" fill="#caa23a" stroke="#7a6320" stroke-width="1"/>
-<text x="712" y="360" font-family="DejaVu Sans Mono" font-size="12" fill="#eaecf7" text-anchor="start" font-weight="normal">RX</text>
-<circle cx="700" cy="382" r="4.5" fill="#caa23a" stroke="#7a6320" stroke-width="1"/>
-<text x="712" y="386" font-family="DejaVu Sans Mono" font-size="12" fill="#eaecf7" text-anchor="start" font-weight="normal">TX</text>
-<circle cx="700" cy="408" r="4.5" fill="#caa23a" stroke="#7a6320" stroke-width="1"/>
-<text x="712" y="412" font-family="DejaVu Sans Mono" font-size="12" fill="#eaecf7" text-anchor="start" font-weight="normal">BUSY</text>
-<circle cx="700" cy="434" r="4.5" fill="#caa23a" stroke="#7a6320" stroke-width="1"/>
-<text x="712" y="438" font-family="DejaVu Sans Mono" font-size="12" fill="#eaecf7" text-anchor="start" font-weight="normal">GND</text>
-<circle cx="740" cy="450" r="4.5" fill="#caa23a" stroke="#7a6320" stroke-width="1"/>
-<text x="740" y="468" font-family="DejaVu Sans Mono" font-size="11" fill="#3a4a8c" text-anchor="middle" font-weight="normal">SPK1</text>
-<circle cx="810" cy="450" r="4.5" fill="#caa23a" stroke="#7a6320" stroke-width="1"/>
-<text x="810" y="468" font-family="DejaVu Sans Mono" font-size="11" fill="#3a4a8c" text-anchor="middle" font-weight="normal">SPK2</text>
-<circle cx="775.0" cy="520" r="42" fill="#3a3a3a"/>
-<circle cx="775.0" cy="520" r="28" fill="#555"/>
-<circle cx="775.0" cy="520" r="9" fill="#222"/>
-<text x="775.0" y="580" font-family="DejaVu Sans" font-size="12" fill="#5b6573" text-anchor="middle" font-weight="normal">Lautsprecher</text>
-<path d="M 580,240 L 612,240 L 612,330 L 700,330" fill="none" stroke="#d23b3b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M 580,332 L 624,332 L 624,356 L 700,356" fill="none" stroke="#2f6fd2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M 580,378 L 636,378 L 636,382 L 700,382" fill="none" stroke="#2e9e4f" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M 580,424 L 648,424 L 648,408 L 700,408" fill="none" stroke="#f08a24" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M 580,286 L 664,286 L 664,434 L 700,434" fill="none" stroke="#222222" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-<rect x="636" y="347" width="50" height="18" rx="3" fill="#f3ead0" stroke="#9a7d2e" stroke-width="2"/>
-<text x="661" y="342" font-family="DejaVu Sans" font-size="11" fill="#7a6320" text-anchor="middle" font-weight="bold">1 kΩ</text>
-<path d="M 740,450 L 740,514 L 757.0,514" fill="none" stroke="#777777" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M 810,450 L 810,538 L 793.0,538" fill="none" stroke="#777777" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-<text x="54" y="186" font-family="DejaVu Sans" font-size="15" fill="#1b1f27" text-anchor="start" font-weight="bold">Audio-Verbindungen</text>
-<rect x="54" y="205" width="14" height="14" rx="3" fill="#d23b3b"/>
-<text x="78" y="218" font-family="DejaVu Sans Mono" font-size="13" fill="#1b1f27" text-anchor="start" font-weight="normal">DFPlayer VCC</text>
-<text x="78" y="232" font-family="DejaVu Sans Mono" font-size="12" fill="#5b6573" text-anchor="start" font-weight="normal">→ ESP 5V</text>
-<rect x="54" y="251" width="14" height="14" rx="3" fill="#2f6fd2"/>
-<text x="78" y="264" font-family="DejaVu Sans Mono" font-size="13" fill="#1b1f27" text-anchor="start" font-weight="normal">DFPlayer RX</text>
-<text x="78" y="278" font-family="DejaVu Sans Mono" font-size="12" fill="#5b6573" text-anchor="start" font-weight="normal">→ ESP GPIO23 (TX2) · 1 kΩ</text>
-<rect x="54" y="297" width="14" height="14" rx="3" fill="#2e9e4f"/>
-<text x="78" y="310" font-family="DejaVu Sans Mono" font-size="13" fill="#1b1f27" text-anchor="start" font-weight="normal">DFPlayer TX</text>
-<text x="78" y="324" font-family="DejaVu Sans Mono" font-size="12" fill="#5b6573" text-anchor="start" font-weight="normal">→ ESP GPIO22 (RX2)</text>
-<rect x="54" y="343" width="14" height="14" rx="3" fill="#f08a24"/>
-<text x="78" y="356" font-family="DejaVu Sans Mono" font-size="13" fill="#1b1f27" text-anchor="start" font-weight="normal">DFPlayer BUSY</text>
-<text x="78" y="370" font-family="DejaVu Sans Mono" font-size="12" fill="#5b6573" text-anchor="start" font-weight="normal">→ ESP GPIO4</text>
-<rect x="54" y="389" width="14" height="14" rx="3" fill="#222222"/>
-<text x="78" y="402" font-family="DejaVu Sans Mono" font-size="13" fill="#1b1f27" text-anchor="start" font-weight="normal">DFPlayer GND</text>
-<text x="78" y="416" font-family="DejaVu Sans Mono" font-size="12" fill="#5b6573" text-anchor="start" font-weight="normal">→ ESP GND</text>
-<rect x="54" y="435" width="14" height="14" rx="3" fill="#777777"/>
-<text x="78" y="448" font-family="DejaVu Sans Mono" font-size="13" fill="#1b1f27" text-anchor="start" font-weight="normal">DFPlayer SPK1/SPK2</text>
-<text x="78" y="462" font-family="DejaVu Sans Mono" font-size="12" fill="#5b6573" text-anchor="start" font-weight="normal">→ Lautsprecher</text>
-<text x="54" y="574" font-family="DejaVu Sans" font-size="13" fill="#f08a24" text-anchor="start" font-weight="bold">★ Neu: BUSY (GPIO4) meldet "spielt gerade" – kein Serial-Polling mehr.</text>
-<rect x="30" y="612" width="940" height="656" rx="14" fill="#ffffff" opacity="1" stroke="#d2d7df" stroke-width="2"/>
-<text x="50" y="646" font-family="DejaVu Sans" font-size="19" fill="#1b1f27" text-anchor="start" font-weight="bold">B · Tastenmatrix 5×5 ↔ ESP32 (24 Tasten A–X + Mode-Taste Y)</text>
-<path d="M 235,688 L 235,1184" fill="none" stroke="#7a3fb0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-<rect x="201" y="662" width="68" height="20" rx="4" fill="#7a3fb0"/>
-<text x="235" y="677" font-family="DejaVu Sans Mono" font-size="11" fill="#fff" text-anchor="middle" font-weight="normal">GPIO32</text>
-<text x="235" y="1206" font-family="DejaVu Sans" font-size="13" fill="#7a3fb0" text-anchor="middle" font-weight="bold">C1</text>
-<path d="M 339,688 L 339,1184" fill="none" stroke="#7a3fb0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-<rect x="305" y="662" width="68" height="20" rx="4" fill="#7a3fb0"/>
-<text x="339" y="677" font-family="DejaVu Sans Mono" font-size="11" fill="#fff" text-anchor="middle" font-weight="normal">GPIO33</text>
-<text x="339" y="1206" font-family="DejaVu Sans" font-size="13" fill="#7a3fb0" text-anchor="middle" font-weight="bold">C2</text>
-<path d="M 443,688 L 443,1184" fill="none" stroke="#7a3fb0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-<rect x="409" y="662" width="68" height="20" rx="4" fill="#7a3fb0"/>
-<text x="443" y="677" font-family="DejaVu Sans Mono" font-size="11" fill="#fff" text-anchor="middle" font-weight="normal">GPIO25</text>
-<text x="443" y="1206" font-family="DejaVu Sans" font-size="13" fill="#7a3fb0" text-anchor="middle" font-weight="bold">C3</text>
-<path d="M 547,688 L 547,1184" fill="none" stroke="#7a3fb0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-<rect x="513" y="662" width="68" height="20" rx="4" fill="#7a3fb0"/>
-<text x="547" y="677" font-family="DejaVu Sans Mono" font-size="11" fill="#fff" text-anchor="middle" font-weight="normal">GPIO26</text>
-<text x="547" y="1206" font-family="DejaVu Sans" font-size="13" fill="#7a3fb0" text-anchor="middle" font-weight="bold">C4</text>
-<path d="M 651,688 L 651,1184" fill="none" stroke="#7a3fb0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-<rect x="617" y="662" width="68" height="20" rx="4" fill="#7a3fb0"/>
-<text x="651" y="677" font-family="DejaVu Sans Mono" font-size="11" fill="#fff" text-anchor="middle" font-weight="normal">GPIO27</text>
-<text x="651" y="1206" font-family="DejaVu Sans" font-size="13" fill="#7a3fb0" text-anchor="middle" font-weight="bold">C5</text>
-<path d="M 155,728 L 691,728" fill="none" stroke="#8f4814" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-<rect x="83" y="716" width="72" height="22" rx="4" fill="#8f4814"/>
-<text x="119" y="732" font-family="DejaVu Sans Mono" font-size="11" fill="#fff" text-anchor="middle" font-weight="normal">GPIO19</text>
-<text x="717" y="733" font-family="DejaVu Sans" font-size="13" fill="#8f4814" text-anchor="middle" font-weight="bold">R1</text>
-<path d="M 155,832 L 691,832" fill="none" stroke="#8f4814" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-<rect x="83" y="820" width="72" height="22" rx="4" fill="#8f4814"/>
-<text x="119" y="836" font-family="DejaVu Sans Mono" font-size="11" fill="#fff" text-anchor="middle" font-weight="normal">GPIO18</text>
-<text x="717" y="837" font-family="DejaVu Sans" font-size="13" fill="#8f4814" text-anchor="middle" font-weight="bold">R2</text>
-<path d="M 155,936 L 691,936" fill="none" stroke="#8f4814" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-<rect x="83" y="924" width="72" height="22" rx="4" fill="#8f4814"/>
-<text x="119" y="940" font-family="DejaVu Sans Mono" font-size="11" fill="#fff" text-anchor="middle" font-weight="normal">GPIO5</text>
-<text x="717" y="941" font-family="DejaVu Sans" font-size="13" fill="#8f4814" text-anchor="middle" font-weight="bold">R3</text>
-<path d="M 155,1040 L 691,1040" fill="none" stroke="#8f4814" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-<rect x="83" y="1028" width="72" height="22" rx="4" fill="#8f4814"/>
-<text x="119" y="1044" font-family="DejaVu Sans Mono" font-size="11" fill="#fff" text-anchor="middle" font-weight="normal">GPIO17</text>
-<text x="717" y="1045" font-family="DejaVu Sans" font-size="13" fill="#8f4814" text-anchor="middle" font-weight="bold">R4</text>
-<path d="M 155,1144 L 691,1144" fill="none" stroke="#8f4814" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-<rect x="83" y="1132" width="72" height="22" rx="4" fill="#8f4814"/>
-<text x="119" y="1148" font-family="DejaVu Sans Mono" font-size="11" fill="#fff" text-anchor="middle" font-weight="normal">GPIO16</text>
-<text x="717" y="1149" font-family="DejaVu Sans" font-size="13" fill="#8f4814" text-anchor="middle" font-weight="bold">R5</text>
-<circle cx="235" cy="728" r="28" fill="#9a231e"/>
-<circle cx="235" cy="728" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
-<text x="235" y="734" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">A</text>
-<circle cx="339" cy="728" r="28" fill="#9a231e"/>
-<circle cx="339" cy="728" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
-<text x="339" y="734" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">B</text>
-<circle cx="443" cy="728" r="28" fill="#9a231e"/>
-<circle cx="443" cy="728" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
-<text x="443" y="734" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">C</text>
-<circle cx="547" cy="728" r="28" fill="#9a231e"/>
-<circle cx="547" cy="728" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
-<text x="547" y="734" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">D</text>
-<circle cx="651" cy="728" r="28" fill="#9a231e"/>
-<circle cx="651" cy="728" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
-<text x="651" y="734" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">E</text>
-<circle cx="235" cy="832" r="28" fill="#9a231e"/>
-<circle cx="235" cy="832" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
-<text x="235" y="838" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">F</text>
-<circle cx="339" cy="832" r="28" fill="#9a231e"/>
-<circle cx="339" cy="832" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
-<text x="339" y="838" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">G</text>
-<circle cx="443" cy="832" r="28" fill="#9a231e"/>
-<circle cx="443" cy="832" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
-<text x="443" y="838" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">H</text>
-<circle cx="547" cy="832" r="28" fill="#9a231e"/>
-<circle cx="547" cy="832" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
-<text x="547" y="838" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">I</text>
-<circle cx="651" cy="832" r="28" fill="#9a231e"/>
-<circle cx="651" cy="832" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
-<text x="651" y="838" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">J</text>
-<circle cx="235" cy="936" r="28" fill="#9a231e"/>
-<circle cx="235" cy="936" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
-<text x="235" y="942" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">K</text>
-<circle cx="339" cy="936" r="28" fill="#9a231e"/>
-<circle cx="339" cy="936" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
-<text x="339" y="942" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">L</text>
-<circle cx="443" cy="936" r="28" fill="#9a231e"/>
-<circle cx="443" cy="936" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
-<text x="443" y="942" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">M</text>
-<circle cx="547" cy="936" r="28" fill="#9a231e"/>
-<circle cx="547" cy="936" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
-<text x="547" y="942" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">N</text>
-<circle cx="651" cy="936" r="28" fill="#9a231e"/>
-<circle cx="651" cy="936" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
-<text x="651" y="942" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">O</text>
-<circle cx="235" cy="1040" r="28" fill="#9a231e"/>
-<circle cx="235" cy="1040" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
-<text x="235" y="1046" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">P</text>
-<circle cx="339" cy="1040" r="28" fill="#9a231e"/>
-<circle cx="339" cy="1040" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
-<text x="339" y="1046" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">Q</text>
-<circle cx="443" cy="1040" r="28" fill="#9a231e"/>
-<circle cx="443" cy="1040" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
-<text x="443" y="1046" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">R</text>
-<circle cx="547" cy="1040" r="28" fill="#9a231e"/>
-<circle cx="547" cy="1040" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
-<text x="547" y="1046" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">S</text>
-<circle cx="651" cy="1040" r="28" fill="#9a231e"/>
-<circle cx="651" cy="1040" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
-<text x="651" y="1046" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">T</text>
-<circle cx="235" cy="1144" r="28" fill="#9a231e"/>
-<circle cx="235" cy="1144" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
-<text x="235" y="1150" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">U</text>
-<circle cx="339" cy="1144" r="28" fill="#9a231e"/>
-<circle cx="339" cy="1144" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
-<text x="339" y="1150" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">V</text>
-<circle cx="443" cy="1144" r="28" fill="#9a231e"/>
-<circle cx="443" cy="1144" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
-<text x="443" y="1150" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">W</text>
-<circle cx="547" cy="1144" r="28" fill="#9a231e"/>
-<circle cx="547" cy="1144" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
-<text x="547" y="1150" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">X</text>
-<circle cx="651" cy="1144" r="28" fill="#9aa0ad"/>
-<circle cx="651" cy="1144" r="24" fill="#d9dde3" stroke="#9aa0ad" stroke-width="3"/>
-<text x="651" y="1150" font-family="DejaVu Sans" font-size="18" fill="#1b1f27" text-anchor="middle" font-weight="bold">Y</text>
-<text x="651" y="1186" font-family="DejaVu Sans" font-size="10" fill="#5b6573" text-anchor="middle" font-weight="bold">MODE</text>
-<text x="54" y="1252" font-family="DejaVu Sans" font-size="13" fill="#8f4814" text-anchor="start" font-weight="bold">Zeilen (R1–R5):</text>
-<text x="200" y="1252" font-family="DejaVu Sans Mono" font-size="13" fill="#1b1f27" text-anchor="start" font-weight="normal">GPIO 19 · 18 · 5 · 17 · 16</text>
-<text x="500" y="1252" font-family="DejaVu Sans" font-size="13" fill="#7a3fb0" text-anchor="start" font-weight="bold">Spalten (C1–C5):</text>
-<text x="670" y="1252" font-family="DejaVu Sans Mono" font-size="13" fill="#1b1f27" text-anchor="start" font-weight="normal">GPIO 32 · 33 · 25 · 26 · 27</text>
+<text x="500.0" y="70" font-family="DejaVu Sans" font-size="14" fill="#5b6573" text-anchor="middle" font-weight="normal">5×5-Tastenmatrix · DFPlayer-DAC → 3,5 mm Stereo-Klinke (Line Out) · BUSY-Rückmeldung</text>
+<rect x="30" y="96" width="940" height="648" rx="14" fill="#ffffff" opacity="1" stroke="#d2d7df" stroke-width="2"/>
+<text x="50" y="130" font-family="DejaVu Sans" font-size="18" fill="#1b1f27" text-anchor="start" font-weight="bold">A · Audio: DFPlayer Mini ↔ ESP32 · DAC → Line Out (3,5 mm Klinke → Endstufe)</text>
+<rect x="400" y="250" width="200" height="300" rx="10" fill="url(#gPcbDfp)" opacity="1" stroke="#0e1230" stroke-width="2"/>
+<text x="500.0" y="276" font-family="DejaVu Sans" font-size="15" fill="#d7dcf5" text-anchor="middle" font-weight="bold">DFPlayer Mini</text>
+<rect x="434" y="290" width="132" height="54" rx="6" fill="url(#gMetal)" opacity="1" stroke="#8f95a1" stroke-width="1.5"/>
+<rect x="446" y="300" width="108" height="16" rx="3" fill="#8b91a0" opacity="1"/>
+<text x="500.0" y="334" font-family="DejaVu Sans" font-size="11" fill="#3c424c" text-anchor="middle" font-weight="normal">microSD</text>
+<rect x="591" y="343" width="18" height="14" rx="3" fill="url(#gGold)" stroke="#8a6d1e" stroke-width="1"/>
+<circle cx="600" cy="350" r="3.2" fill="#2b2410"/>
+<text x="586" y="354" font-family="DejaVu Sans Mono" font-size="12" fill="#eaecf7" text-anchor="end" font-weight="normal">VCC</text>
+<rect x="591" y="385" width="18" height="14" rx="3" fill="url(#gGold)" stroke="#8a6d1e" stroke-width="1"/>
+<circle cx="600" cy="392" r="3.2" fill="#2b2410"/>
+<text x="586" y="396" font-family="DejaVu Sans Mono" font-size="12" fill="#eaecf7" text-anchor="end" font-weight="normal">RX</text>
+<rect x="591" y="427" width="18" height="14" rx="3" fill="url(#gGold)" stroke="#8a6d1e" stroke-width="1"/>
+<circle cx="600" cy="434" r="3.2" fill="#2b2410"/>
+<text x="586" y="438" font-family="DejaVu Sans Mono" font-size="12" fill="#eaecf7" text-anchor="end" font-weight="normal">TX</text>
+<rect x="591" y="469" width="18" height="14" rx="3" fill="url(#gGold)" stroke="#8a6d1e" stroke-width="1"/>
+<circle cx="600" cy="476" r="3.2" fill="#2b2410"/>
+<text x="586" y="480" font-family="DejaVu Sans Mono" font-size="12" fill="#eaecf7" text-anchor="end" font-weight="normal">BUSY</text>
+<rect x="591" y="511" width="18" height="14" rx="3" fill="url(#gGold)" stroke="#8a6d1e" stroke-width="1"/>
+<circle cx="600" cy="518" r="3.2" fill="#2b2410"/>
+<text x="586" y="522" font-family="DejaVu Sans Mono" font-size="12" fill="#eaecf7" text-anchor="end" font-weight="normal">GND</text>
+<rect x="391" y="359" width="18" height="14" rx="3" fill="url(#gGold)" stroke="#8a6d1e" stroke-width="1"/>
+<circle cx="400" cy="366" r="3.2" fill="#2b2410"/>
+<text x="414" y="370" font-family="DejaVu Sans Mono" font-size="12" fill="#eaecf7" text-anchor="start" font-weight="normal">DAC_L</text>
+<rect x="391" y="419" width="18" height="14" rx="3" fill="url(#gGold)" stroke="#8a6d1e" stroke-width="1"/>
+<circle cx="400" cy="426" r="3.2" fill="#2b2410"/>
+<text x="414" y="430" font-family="DejaVu Sans Mono" font-size="12" fill="#eaecf7" text-anchor="start" font-weight="normal">DAC_R</text>
+<rect x="391" y="479" width="18" height="14" rx="3" fill="url(#gGold)" stroke="#8a6d1e" stroke-width="1"/>
+<circle cx="400" cy="486" r="3.2" fill="#2b2410"/>
+<text x="414" y="490" font-family="DejaVu Sans Mono" font-size="12" fill="#eaecf7" text-anchor="start" font-weight="normal">GND</text>
+<rect x="720" y="190" width="185" height="400" rx="10" fill="url(#gPcbEsp)" opacity="1" stroke="#0b0d12" stroke-width="2"/>
+<path d="M 772.5,202 782.5,208 792.5,202 802.5,208 812.5,202 822.5,208 832.5,202 842.5,208 852.5,202" fill="none" stroke="#cfd3da" stroke-width="2"/>
+<rect x="740" y="214" width="145" height="92" rx="6" fill="url(#gShield)" opacity="1" stroke="#8f95a1" stroke-width="1.5"/>
+<text x="812.5" y="256" font-family="DejaVu Sans" font-size="11" fill="#3c424c" text-anchor="middle" font-weight="bold">ESP-WROOM-32</text>
+<text x="812.5" y="274" font-family="DejaVu Sans" font-size="9" fill="#6b7280" text-anchor="middle" font-weight="normal">WiFi · BT</text>
+<text x="812.5" y="328" font-family="DejaVu Sans" font-size="15" fill="#eef2ee" text-anchor="middle" font-weight="bold">ESP32 DevKit V1</text>
+<rect x="786.5" y="568" width="52" height="22" rx="4" fill="url(#gMetal)" opacity="1" stroke="#8f95a1" stroke-width="1.5"/>
+<text x="812.5" y="560" font-family="DejaVu Sans" font-size="10" fill="#cfd3da" text-anchor="middle" font-weight="normal">USB</text>
+<rect x="711" y="343" width="18" height="14" rx="3" fill="url(#gGold)" stroke="#8a6d1e" stroke-width="1"/>
+<circle cx="720" cy="350" r="3.2" fill="#2b2410"/>
+<text x="734" y="354" font-family="DejaVu Sans Mono" font-size="11" fill="#eef2ee" text-anchor="start" font-weight="normal">5V</text>
+<rect x="711" y="385" width="18" height="14" rx="3" fill="url(#gGold)" stroke="#8a6d1e" stroke-width="1"/>
+<circle cx="720" cy="392" r="3.2" fill="#2b2410"/>
+<text x="734" y="396" font-family="DejaVu Sans Mono" font-size="11" fill="#eef2ee" text-anchor="start" font-weight="normal">G23 (TX2)</text>
+<rect x="711" y="427" width="18" height="14" rx="3" fill="url(#gGold)" stroke="#8a6d1e" stroke-width="1"/>
+<circle cx="720" cy="434" r="3.2" fill="#2b2410"/>
+<text x="734" y="438" font-family="DejaVu Sans Mono" font-size="11" fill="#eef2ee" text-anchor="start" font-weight="normal">G22 (RX2)</text>
+<rect x="711" y="469" width="18" height="14" rx="3" fill="url(#gGold)" stroke="#8a6d1e" stroke-width="1"/>
+<circle cx="720" cy="476" r="3.2" fill="#2b2410"/>
+<text x="734" y="480" font-family="DejaVu Sans Mono" font-size="11" fill="#eef2ee" text-anchor="start" font-weight="normal">G4</text>
+<rect x="711" y="511" width="18" height="14" rx="3" fill="url(#gGold)" stroke="#8a6d1e" stroke-width="1"/>
+<circle cx="720" cy="518" r="3.2" fill="#2b2410"/>
+<text x="734" y="522" font-family="DejaVu Sans Mono" font-size="11" fill="#eef2ee" text-anchor="start" font-weight="normal">GND</text>
+<rect x="896" y="393" width="18" height="14" rx="3" fill="url(#gGold)" stroke="#8a6d1e" stroke-width="1"/>
+<circle cx="905" cy="400" r="3.2" fill="#2b2410"/>
+<rect x="896" y="423" width="18" height="14" rx="3" fill="url(#gGold)" stroke="#8a6d1e" stroke-width="1"/>
+<circle cx="905" cy="430" r="3.2" fill="#2b2410"/>
+<rect x="896" y="453" width="18" height="14" rx="3" fill="url(#gGold)" stroke="#8a6d1e" stroke-width="1"/>
+<circle cx="905" cy="460" r="3.2" fill="#2b2410"/>
+<rect x="896" y="483" width="18" height="14" rx="3" fill="url(#gGold)" stroke="#8a6d1e" stroke-width="1"/>
+<circle cx="905" cy="490" r="3.2" fill="#2b2410"/>
+<rect x="896" y="513" width="18" height="14" rx="3" fill="url(#gGold)" stroke="#8a6d1e" stroke-width="1"/>
+<circle cx="905" cy="520" r="3.2" fill="#2b2410"/>
+<rect x="896" y="543" width="18" height="14" rx="3" fill="url(#gGold)" stroke="#8a6d1e" stroke-width="1"/>
+<circle cx="905" cy="550" r="3.2" fill="#2b2410"/>
+<path d="M 609,350 L 711,350" fill="none" stroke="#d23b3b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 609,392 L 711,392" fill="none" stroke="#2f6fd2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 609,434 L 711,434" fill="none" stroke="#2e9e4f" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 609,476 L 711,476" fill="none" stroke="#f08a24" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 609,518 L 711,518" fill="none" stroke="#222222" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="634.0" y="383" width="52" height="18" rx="3" fill="#f3ead0" stroke="#9a7d2e" stroke-width="2"/>
+<text x="660.0" y="378" font-family="DejaVu Sans" font-size="11" fill="#7a6320" text-anchor="middle" font-weight="bold">1 kΩ</text>
+<path d="M 237.0,372 L 237.0,350 Q 250,332 263.0,350 L 263.0,372 Z" fill="url(#gMetal)" stroke="#8f95a1" stroke-width="1.5"/>
+<rect x="237.0" y="408" width="26" height="40" rx="3" fill="url(#gMetal)" opacity="1" stroke="#8f95a1" stroke-width="1.5"/>
+<rect x="237.0" y="468" width="26" height="40" rx="3" fill="url(#gMetal)" opacity="1" stroke="#8f95a1" stroke-width="1.5"/>
+<rect x="236.0" y="372" width="28" height="8" rx="1" fill="#111" opacity="1"/>
+<rect x="236.0" y="448" width="28" height="8" rx="1" fill="#111" opacity="1"/>
+<rect x="232" y="508" width="36" height="70" rx="8" fill="url(#gBarrel)" opacity="1" stroke="#0a0a0a" stroke-width="1"/>
+<path d="M 250,578 L 250,610 L 370,630" fill="none" stroke="#2a2a2a" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="380" y="634" font-family="DejaVu Sans" font-size="12" fill="#5b6573" text-anchor="start" font-weight="normal">→ Endstufe (Line-In)</text>
+<text x="250" y="662" font-family="DejaVu Sans" font-size="12" fill="#1b1f27" text-anchor="middle" font-weight="bold">3,5 mm Stereo-Klinke (Line Out)</text>
+<text x="225.0" y="370" font-family="DejaVu Sans Mono" font-size="11" fill="#5b6573" text-anchor="end" font-weight="normal">Tip · L</text>
+<text x="225.0" y="430" font-family="DejaVu Sans Mono" font-size="11" fill="#5b6573" text-anchor="end" font-weight="normal">Ring · R</text>
+<text x="225.0" y="490" font-family="DejaVu Sans Mono" font-size="11" fill="#5b6573" text-anchor="end" font-weight="normal">Sleeve · GND</text>
+<path d="M 391,366 L 264.0,366" fill="none" stroke="#8e44ad" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 391,426 L 264.0,426" fill="none" stroke="#12968a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 391,486 L 264.0,486" fill="none" stroke="#222222" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="54" y="724" font-family="DejaVu Sans" font-size="12" fill="#5b6573" text-anchor="start" font-weight="normal">DAC_R/DAC_L = Line-Pegel → Endstufe · Line-Out-GND am DFPlayer-GND zwischen SPK1/SPK2 · BUSY (GPIO4) meldet „spielt gerade".</text>
+<rect x="30" y="764" width="940" height="656" rx="14" fill="#ffffff" opacity="1" stroke="#d2d7df" stroke-width="2"/>
+<text x="50" y="798" font-family="DejaVu Sans" font-size="19" fill="#1b1f27" text-anchor="start" font-weight="bold">B · Tastenmatrix 5×5 ↔ ESP32 (24 Tasten A–X + Mode-Taste Y)</text>
+<path d="M 235,840 L 235,1336" fill="none" stroke="#7a3fb0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="201" y="814" width="68" height="20" rx="4" fill="#7a3fb0"/>
+<text x="235" y="829" font-family="DejaVu Sans Mono" font-size="11" fill="#fff" text-anchor="middle" font-weight="normal">GPIO32</text>
+<text x="235" y="1358" font-family="DejaVu Sans" font-size="13" fill="#7a3fb0" text-anchor="middle" font-weight="bold">C1</text>
+<path d="M 339,840 L 339,1336" fill="none" stroke="#7a3fb0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="305" y="814" width="68" height="20" rx="4" fill="#7a3fb0"/>
+<text x="339" y="829" font-family="DejaVu Sans Mono" font-size="11" fill="#fff" text-anchor="middle" font-weight="normal">GPIO33</text>
+<text x="339" y="1358" font-family="DejaVu Sans" font-size="13" fill="#7a3fb0" text-anchor="middle" font-weight="bold">C2</text>
+<path d="M 443,840 L 443,1336" fill="none" stroke="#7a3fb0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="409" y="814" width="68" height="20" rx="4" fill="#7a3fb0"/>
+<text x="443" y="829" font-family="DejaVu Sans Mono" font-size="11" fill="#fff" text-anchor="middle" font-weight="normal">GPIO25</text>
+<text x="443" y="1358" font-family="DejaVu Sans" font-size="13" fill="#7a3fb0" text-anchor="middle" font-weight="bold">C3</text>
+<path d="M 547,840 L 547,1336" fill="none" stroke="#7a3fb0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="513" y="814" width="68" height="20" rx="4" fill="#7a3fb0"/>
+<text x="547" y="829" font-family="DejaVu Sans Mono" font-size="11" fill="#fff" text-anchor="middle" font-weight="normal">GPIO26</text>
+<text x="547" y="1358" font-family="DejaVu Sans" font-size="13" fill="#7a3fb0" text-anchor="middle" font-weight="bold">C4</text>
+<path d="M 651,840 L 651,1336" fill="none" stroke="#7a3fb0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="617" y="814" width="68" height="20" rx="4" fill="#7a3fb0"/>
+<text x="651" y="829" font-family="DejaVu Sans Mono" font-size="11" fill="#fff" text-anchor="middle" font-weight="normal">GPIO27</text>
+<text x="651" y="1358" font-family="DejaVu Sans" font-size="13" fill="#7a3fb0" text-anchor="middle" font-weight="bold">C5</text>
+<path d="M 155,880 L 691,880" fill="none" stroke="#8f4814" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="83" y="868" width="72" height="22" rx="4" fill="#8f4814"/>
+<text x="119" y="884" font-family="DejaVu Sans Mono" font-size="11" fill="#fff" text-anchor="middle" font-weight="normal">GPIO19</text>
+<text x="717" y="885" font-family="DejaVu Sans" font-size="13" fill="#8f4814" text-anchor="middle" font-weight="bold">R1</text>
+<path d="M 155,984 L 691,984" fill="none" stroke="#8f4814" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="83" y="972" width="72" height="22" rx="4" fill="#8f4814"/>
+<text x="119" y="988" font-family="DejaVu Sans Mono" font-size="11" fill="#fff" text-anchor="middle" font-weight="normal">GPIO18</text>
+<text x="717" y="989" font-family="DejaVu Sans" font-size="13" fill="#8f4814" text-anchor="middle" font-weight="bold">R2</text>
+<path d="M 155,1088 L 691,1088" fill="none" stroke="#8f4814" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="83" y="1076" width="72" height="22" rx="4" fill="#8f4814"/>
+<text x="119" y="1092" font-family="DejaVu Sans Mono" font-size="11" fill="#fff" text-anchor="middle" font-weight="normal">GPIO5</text>
+<text x="717" y="1093" font-family="DejaVu Sans" font-size="13" fill="#8f4814" text-anchor="middle" font-weight="bold">R3</text>
+<path d="M 155,1192 L 691,1192" fill="none" stroke="#8f4814" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="83" y="1180" width="72" height="22" rx="4" fill="#8f4814"/>
+<text x="119" y="1196" font-family="DejaVu Sans Mono" font-size="11" fill="#fff" text-anchor="middle" font-weight="normal">GPIO17</text>
+<text x="717" y="1197" font-family="DejaVu Sans" font-size="13" fill="#8f4814" text-anchor="middle" font-weight="bold">R4</text>
+<path d="M 155,1296 L 691,1296" fill="none" stroke="#8f4814" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="83" y="1284" width="72" height="22" rx="4" fill="#8f4814"/>
+<text x="119" y="1300" font-family="DejaVu Sans Mono" font-size="11" fill="#fff" text-anchor="middle" font-weight="normal">GPIO16</text>
+<text x="717" y="1301" font-family="DejaVu Sans" font-size="13" fill="#8f4814" text-anchor="middle" font-weight="bold">R5</text>
+<circle cx="235" cy="880" r="28" fill="#9a231e"/>
+<circle cx="235" cy="880" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
+<text x="235" y="886" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">A</text>
+<circle cx="339" cy="880" r="28" fill="#9a231e"/>
+<circle cx="339" cy="880" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
+<text x="339" y="886" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">B</text>
+<circle cx="443" cy="880" r="28" fill="#9a231e"/>
+<circle cx="443" cy="880" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
+<text x="443" y="886" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">C</text>
+<circle cx="547" cy="880" r="28" fill="#9a231e"/>
+<circle cx="547" cy="880" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
+<text x="547" y="886" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">D</text>
+<circle cx="651" cy="880" r="28" fill="#9a231e"/>
+<circle cx="651" cy="880" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
+<text x="651" y="886" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">E</text>
+<circle cx="235" cy="984" r="28" fill="#9a231e"/>
+<circle cx="235" cy="984" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
+<text x="235" y="990" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">F</text>
+<circle cx="339" cy="984" r="28" fill="#9a231e"/>
+<circle cx="339" cy="984" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
+<text x="339" y="990" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">G</text>
+<circle cx="443" cy="984" r="28" fill="#9a231e"/>
+<circle cx="443" cy="984" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
+<text x="443" y="990" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">H</text>
+<circle cx="547" cy="984" r="28" fill="#9a231e"/>
+<circle cx="547" cy="984" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
+<text x="547" y="990" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">I</text>
+<circle cx="651" cy="984" r="28" fill="#9a231e"/>
+<circle cx="651" cy="984" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
+<text x="651" y="990" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">J</text>
+<circle cx="235" cy="1088" r="28" fill="#9a231e"/>
+<circle cx="235" cy="1088" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
+<text x="235" y="1094" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">K</text>
+<circle cx="339" cy="1088" r="28" fill="#9a231e"/>
+<circle cx="339" cy="1088" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
+<text x="339" y="1094" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">L</text>
+<circle cx="443" cy="1088" r="28" fill="#9a231e"/>
+<circle cx="443" cy="1088" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
+<text x="443" y="1094" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">M</text>
+<circle cx="547" cy="1088" r="28" fill="#9a231e"/>
+<circle cx="547" cy="1088" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
+<text x="547" y="1094" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">N</text>
+<circle cx="651" cy="1088" r="28" fill="#9a231e"/>
+<circle cx="651" cy="1088" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
+<text x="651" y="1094" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">O</text>
+<circle cx="235" cy="1192" r="28" fill="#9a231e"/>
+<circle cx="235" cy="1192" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
+<text x="235" y="1198" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">P</text>
+<circle cx="339" cy="1192" r="28" fill="#9a231e"/>
+<circle cx="339" cy="1192" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
+<text x="339" y="1198" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">Q</text>
+<circle cx="443" cy="1192" r="28" fill="#9a231e"/>
+<circle cx="443" cy="1192" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
+<text x="443" y="1198" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">R</text>
+<circle cx="547" cy="1192" r="28" fill="#9a231e"/>
+<circle cx="547" cy="1192" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
+<text x="547" y="1198" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">S</text>
+<circle cx="651" cy="1192" r="28" fill="#9a231e"/>
+<circle cx="651" cy="1192" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
+<text x="651" y="1198" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">T</text>
+<circle cx="235" cy="1296" r="28" fill="#9a231e"/>
+<circle cx="235" cy="1296" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
+<text x="235" y="1302" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">U</text>
+<circle cx="339" cy="1296" r="28" fill="#9a231e"/>
+<circle cx="339" cy="1296" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
+<text x="339" y="1302" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">V</text>
+<circle cx="443" cy="1296" r="28" fill="#9a231e"/>
+<circle cx="443" cy="1296" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
+<text x="443" y="1302" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">W</text>
+<circle cx="547" cy="1296" r="28" fill="#9a231e"/>
+<circle cx="547" cy="1296" r="24" fill="#c8302a" stroke="#9a231e" stroke-width="3"/>
+<text x="547" y="1302" font-family="DejaVu Sans" font-size="18" fill="#fff" text-anchor="middle" font-weight="bold">X</text>
+<circle cx="651" cy="1296" r="28" fill="#9aa0ad"/>
+<circle cx="651" cy="1296" r="24" fill="#d9dde3" stroke="#9aa0ad" stroke-width="3"/>
+<text x="651" y="1302" font-family="DejaVu Sans" font-size="18" fill="#1b1f27" text-anchor="middle" font-weight="bold">Y</text>
+<text x="651" y="1338" font-family="DejaVu Sans" font-size="10" fill="#5b6573" text-anchor="middle" font-weight="bold">MODE</text>
+<text x="54" y="1404" font-family="DejaVu Sans" font-size="13" fill="#8f4814" text-anchor="start" font-weight="bold">Zeilen (R1–R5):</text>
+<text x="200" y="1404" font-family="DejaVu Sans Mono" font-size="13" fill="#1b1f27" text-anchor="start" font-weight="normal">GPIO 19 · 18 · 5 · 17 · 16</text>
+<text x="500" y="1404" font-family="DejaVu Sans" font-size="13" fill="#7a3fb0" text-anchor="start" font-weight="bold">Spalten (C1–C5):</text>
+<text x="670" y="1404" font-family="DejaVu Sans Mono" font-size="13" fill="#1b1f27" text-anchor="start" font-weight="normal">GPIO 32 · 33 · 25 · 26 · 27</text>
 </svg>

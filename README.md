@@ -75,20 +75,27 @@ Deshalb: ein eigenständiges Soundboard mit 25 Tasten, SD-Karte und Sofortreakti
 Für die korrekte Verkabelung siehe
 [DFPlayer Mini Dokumentation](https://www.elektronik-kompendium.de/sites/praxis/bauteil_dfplayer-mini.htm)
 
-| DFPlayer Pin | ESP32 Pin |
-|--------------|-----------|
+| DFPlayer Pin | ESP32 / Ausgang |
+|--------------|-----------------|
 | TX           | GPIO22    |
 | RX           | GPIO23 **(über 1 kΩ in Reihe)** |
 | BUSY         | GPIO4     |
 | VCC          | 5V        |
-| GND          | GND       |
-|----| **Endstufe**|
-| SPK1     | Left Audio  |
-| GND      | GND Audio   |
-| SPK2     | Right Audio |
+| GND          | GND (ESP32) |
+|----| **Line Out → Endstufe (Line-In)** |
+| DAC_R    | Line Out R  |
+| DAC_L    | Line Out L  |
+| GND (zwischen SPK1 & SPK2) | Line Out GND |
 
 > Der **1 kΩ-Widerstand** in der RX-Leitung (ESP-TX → DFPlayer-RX) dämpft Störungen
 > und schützt den DFPlayer-Eingang – eine gängige Empfehlung für stabile UART-Kommunikation.
+
+> **Audioausgang:** Der Ton geht über den **DAC-Ausgang** (`DAC_R`/`DAC_L`, Line-Pegel)
+> an den **Line-In der Endstufe** – nicht mehr über die internen SPK-Verstärkerpins
+> (die bleiben frei). Verkabelt als **3,5-mm-Stereo-Klinke**: **Tip = L** (`DAC_L`),
+> **Ring = R** (`DAC_R`), **Sleeve = GND**. Die **Masse des Line-Outs** liegt am
+> **mittleren GND-Pin zwischen SPK1 und SPK2**; die zweite **GND**-Leitung des DFPlayers
+> ist mit **GND des ESP32** verbunden.
 
 
 💾 SD-Karte:  
